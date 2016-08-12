@@ -1,0 +1,3 @@
+[submodule "apigenerator/lib/POGOProtos"]
+	path = apigenerator/lib/POGOProtos
+	url = https://github.com/AeonLucid/POGOProtos.git
