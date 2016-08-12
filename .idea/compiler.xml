@@ -22,6 +22,7 @@
     <bytecodeTargetLevel>
       <module name="api_main" target="1.8" />
       <module name="api_test" target="1.8" />
+      <module name="apigenerator_generated" target="1.8" />
       <module name="apigenerator_main" target="1.8" />
       <module name="apigenerator_test" target="1.8" />
     </bytecodeTargetLevel>
