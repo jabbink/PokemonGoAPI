@@ -37,6 +37,10 @@ sourceSets {
             srcDir 'src/main/kotlin'
         }
     }
+    generated {
+        java.srcDirs "${buildDir}/generated/source/java/main", "$buildDir/generated/source/proto/main/java"
+        compileClasspath = sourceSets.main.runtimeClasspath // So the task has access to the protobuf lib
+    }
 }
 
 // Remove all .proto definition from the final build
@@ -55,6 +59,21 @@ task(generateApi, dependsOn: classes, type: JavaExec) {
     main = 'ink.abb.pogo.api.GenerateApiKt'
     classpath = sourceSets.main.runtimeClasspath
     args "$buildDir/generated/source/java/main"
+}
+
+// First need to make sure we have the protos
+compileKotlin.dependsOn ':apigenerator:generateProto'
+
+// Then we want to actually compile the generated code
+compileGeneratedJava.dependsOn ':apigenerator:generateApi'
+compileGeneratedJava.mustRunAfter ':apigenerator:generateApi'
+
+// And finally we want to make sure we have it generated before we pack it
+jar.dependsOn ':apigenerator:compileGeneratedJava'
+
+jar {
+    from sourceSets.main.output
+    from sourceSets.generated.output
 }
 
 defaultTasks 'generateApi'
