@@ -1,0 +1,4 @@
+rootProject.name = 'api'
+
+include 'apigenerator'
+//project(':apigenerator').projectDir = file('apigenerator')
