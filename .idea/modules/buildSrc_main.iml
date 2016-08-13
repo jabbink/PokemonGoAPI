@@ -1,18 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<module external.linked.project.id=":apigenerator:main" external.linked.project.path="$MODULE_DIR$/../../../apigenerator" external.root.project.path="$MODULE_DIR$/../../.." external.system.id="GRADLE" external.system.module.group="ink.abb.pogo" external.system.module.type="sourceSet" external.system.module.version="0.0.1" type="JAVA_MODULE" version="4">
+<module external.linked.project.id="buildSrc:main" external.linked.project.path="$MODULE_DIR$/../../buildSrc" external.root.project.path="$MODULE_DIR$/../.." external.system.id="GRADLE" external.system.module.group="" external.system.module.type="sourceSet" external.system.module.version="unspecified" type="JAVA_MODULE" version="4">
   <component name="NewModuleRootManager" LANGUAGE_LEVEL="JDK_1_8" inherit-compiler-output="false">
-    <output url="file://$MODULE_DIR$/../../../apigenerator/build/classes/main" />
+    <output url="file://$MODULE_DIR$/../../buildSrc/build/classes/main" />
     <exclude-output />
-    <content url="file://$MODULE_DIR$/../../../apigenerator/build/generated/source/java/main">
-      <sourceFolder url="file://$MODULE_DIR$/../../../apigenerator/build/generated/source/java/main" isTestSource="false" />
-    </content>
-    <content url="file://$MODULE_DIR$/../../../apigenerator/build/generated/source/proto/main/java">
-      <sourceFolder url="file://$MODULE_DIR$/../../../apigenerator/build/generated/source/proto/main/java" isTestSource="false" />
-    </content>
-    <content url="file://$MODULE_DIR$/../../../apigenerator/src/main">
-      <sourceFolder url="file://$MODULE_DIR$/../../../apigenerator/src/main/java" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/../../../apigenerator/src/main/kotlin" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/../../../apigenerator/src/main/resources" type="java-resource" />
+    <content url="file://$MODULE_DIR$/../../buildSrc/src/main">
+      <sourceFolder url="file://$MODULE_DIR$/../../buildSrc/src/main/groovy" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/../../buildSrc/src/main/java" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/../../buildSrc/src/main/resources" type="java-resource" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
@@ -56,7 +50,5 @@
     </orderEntry>
     <orderEntry type="library" name="Gradle: com.google.protobuf:protobuf-java:3.0.0-beta-3" level="project" />
     <orderEntry type="library" name="Gradle: com.sun.codemodel:codemodel:2.6" level="project" />
-    <orderEntry type="library" name="Gradle: org.jetbrains.kotlin:kotlin-stdlib:1.0.3" level="project" />
-    <orderEntry type="library" name="Gradle: org.jetbrains.kotlin:kotlin-runtime:1.0.3" level="project" />
   </component>
 </module>

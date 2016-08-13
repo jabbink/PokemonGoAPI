@@ -18,6 +18,7 @@ apply plugin: 'idea'
 apply plugin: 'maven'
 apply plugin: 'kotlin'
 apply plugin: 'application'
+apply plugin: 'apigenerator'
 
 mainClassName = 'ink.abb.pogo.api.PoGoApiImplKt'
 
@@ -27,7 +28,6 @@ sourceSets {
             srcDir 'src/main/kotlin'
         }
         java {
-            srcDirs = project(":apigenerator").sourceSets.main.java.srcDirs
             srcDirs += "$projectDir/src/main/java"
             srcDirs += "$projectDir/lib/java"
         }
@@ -39,9 +39,6 @@ idea {
         //sourceDirs += "$projectDir/lib/java"
     }
 }
-
-compileJava.dependsOn ":apigenerator:generateApi"
-
 sourceCompatibility = 1.8
 
 repositories {
@@ -50,13 +47,13 @@ repositories {
 }
 
 dependencies {
-    compile project(":apigenerator")
     compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
     compile 'com.squareup.okhttp3:okhttp:3.4.1'
     compile 'io.reactivex:rxkotlin:0.60.0'
     compile 'svarzee.gps:gpsoauth:0.3'
     compile 'com.squareup.moshi:moshi:1.2.0'
     compile 'net.jpountz.lz4:lz4:1.3.0'
+    compile 'com.google.protobuf:protobuf-java:3.0.0-beta-3'
 
     compileOnly 'org.projectlombok:lombok:1.16.10'
 

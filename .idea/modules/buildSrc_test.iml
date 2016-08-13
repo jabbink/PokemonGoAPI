@@ -1,19 +1,29 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<module external.linked.project.id=":apigenerator:generated" external.linked.project.path="$MODULE_DIR$/../../../apigenerator" external.root.project.path="$MODULE_DIR$/../../.." external.system.id="GRADLE" external.system.module.group="ink.abb.pogo" external.system.module.type="sourceSet" external.system.module.version="0.0.1" type="JAVA_MODULE" version="4">
+<module external.linked.project.id="buildSrc:test" external.linked.project.path="$MODULE_DIR$/../../buildSrc" external.root.project.path="$MODULE_DIR$/../.." external.system.id="GRADLE" external.system.module.group="" external.system.module.type="sourceSet" external.system.module.version="unspecified" type="JAVA_MODULE" version="4">
   <component name="NewModuleRootManager" LANGUAGE_LEVEL="JDK_1_8" inherit-compiler-output="false">
-    <output url="file://$MODULE_DIR$/../../../apigenerator/build/classes/generated" />
+    <output-test url="file://$MODULE_DIR$/../../buildSrc/build/classes/test" />
     <exclude-output />
-    <content url="file://$MODULE_DIR$/../../../apigenerator/src/generated">
-      <sourceFolder url="file://$MODULE_DIR$/../../../apigenerator/src/generated/java" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/../../../apigenerator/src/generated/kotlin" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/../../../apigenerator/src/generated/resources" type="java-resource" />
+    <content url="file://$MODULE_DIR$/../../buildSrc/src/test">
+      <sourceFolder url="file://$MODULE_DIR$/../../buildSrc/src/test/groovy" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/../../buildSrc/src/test/java" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/../../buildSrc/src/test/resources" type="java-test-resource" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="module" module-name="buildSrc_main" />
     <orderEntry type="module-library">
       <library>
         <CLASSES>
           <root url="jar://$USER_HOME$/.gradle/caches/2.14.1/generated-gradle-jars/gradle-api-2.14.1.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar://$USER_HOME$/.gradle/wrapper/dists/gradle-2.14.1-all/8bnwg5hd3w55iofp58khbp6yv/gradle-2.14.1/lib/groovy-all-2.4.4.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -30,11 +40,10 @@
         </SOURCES>
       </library>
     </orderEntry>
-    <orderEntry type="module" module-name="apigenerator_main" />
     <orderEntry type="module-library">
       <library>
         <CLASSES>
-          <root url="jar://$USER_HOME$/.gradle/wrapper/dists/gradle-2.14.1-all/8bnwg5hd3w55iofp58khbp6yv/gradle-2.14.1/lib/groovy-all-2.4.4.jar!/" />
+          <root url="jar://$USER_HOME$/.gradle/wrapper/dists/gradle-2.14.1-all/8bnwg5hd3w55iofp58khbp6yv/gradle-2.14.1/lib/gradle-installation-beacon-2.14.1.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -42,7 +51,6 @@
     </orderEntry>
     <orderEntry type="library" name="Gradle: com.google.protobuf:protobuf-java:3.0.0-beta-3" level="project" />
     <orderEntry type="library" name="Gradle: com.sun.codemodel:codemodel:2.6" level="project" />
-    <orderEntry type="library" name="Gradle: org.jetbrains.kotlin:kotlin-stdlib:1.0.3" level="project" />
-    <orderEntry type="library" name="Gradle: org.jetbrains.kotlin:kotlin-runtime:1.0.3" level="project" />
   </component>
+  <component name="TestModuleProperties" production-module="buildSrc_main" />
 </module>

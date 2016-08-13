@@ -5,10 +5,9 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/api.iml" filepath="$PROJECT_DIR$/.idea/modules/api.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/api_main.iml" filepath="$PROJECT_DIR$/.idea/modules/api_main.iml" group="api" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/api_test.iml" filepath="$PROJECT_DIR$/.idea/modules/api_test.iml" group="api" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/apigenerator/apigenerator.iml" filepath="$PROJECT_DIR$/.idea/modules/apigenerator/apigenerator.iml" group="apigenerator" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/apigenerator/apigenerator_generated.iml" filepath="$PROJECT_DIR$/.idea/modules/apigenerator/apigenerator_generated.iml" group="apigenerator" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/apigenerator/apigenerator_main.iml" filepath="$PROJECT_DIR$/.idea/modules/apigenerator/apigenerator_main.iml" group="apigenerator" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/apigenerator/apigenerator_test.iml" filepath="$PROJECT_DIR$/.idea/modules/apigenerator/apigenerator_test.iml" group="apigenerator" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/buildSrc.iml" filepath="$PROJECT_DIR$/.idea/modules/buildSrc.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/buildSrc_main.iml" filepath="$PROJECT_DIR$/.idea/modules/buildSrc_main.iml" group="buildSrc" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/buildSrc_test.iml" filepath="$PROJECT_DIR$/.idea/modules/buildSrc_test.iml" group="buildSrc" />
     </modules>
   </component>
 </project>
