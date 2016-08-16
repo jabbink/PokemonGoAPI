@@ -1,0 +1,37 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.google.protobuf:protobuf-gradle-plugin:0.7.7'
+    }
+}
+apply plugin: 'com.google.protobuf'
+
+repositories {
+    mavenCentral()
+}
+
+sourceSets {
+    main {
+        proto {
+            // Need to use custom dir cause Gradle doesn't like us otherwise :(
+            srcDir 'lib/POGOProtos/src'
+            include '**/*.proto'
+        }
+    }
+}
+
+protobuf {
+    // Configure the protoc executable
+    protoc {
+        // Download from repositories
+        artifact = 'com.google.protobuf:protoc:3.0.0-beta-3'
+    }
+    generatedFilesBaseDir = "$projectDir/../build/generated/source/proto"
+}
+
+dependencies {
+    compile 'com.google.protobuf:protobuf-java:3.0.0-beta-3'
+    compile 'com.sun.codemodel:codemodel:2.6'
+}
