@@ -9,5 +9,7 @@ interface ServerRequest {
 
     val response: com.google.protobuf.GeneratedMessage
 
+    fun getBuilder(): com.google.protobuf.MessageOrBuilder
+
     fun setResponse(payload: ByteString)
 }

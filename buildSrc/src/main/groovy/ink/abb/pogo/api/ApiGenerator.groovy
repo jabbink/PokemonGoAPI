@@ -164,6 +164,9 @@ class ApiGenerator implements Plugin<Project> {
             def getRequestType = clazz.method(JMod.PUBLIC, codeModel.ref("POGOProtos.Networking.Requests.RequestTypeOuterClass.RequestType"), "getRequestType")
             getRequestType.body()._return(codeModel.ref("POGOProtos.Networking.Requests.RequestTypeOuterClass.RequestType").staticRef(camelToUnderscores(className).toUpperCase()))
 
+            def getBuilder = clazz.method(JMod.PUBLIC, builderClass, "getBuilder")
+            getBuilder.body()._return(builderField)
+
 
             needApiLocation.forEach {
                 def isLat = it.toLowerCase().contains("lat")

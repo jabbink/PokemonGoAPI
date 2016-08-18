@@ -1,13 +1,22 @@
 package ink.abb.pogo.api
 
+import POGOProtos.Data.Player.CurrencyOuterClass
 import POGOProtos.Data.Player.PlayerAvatarOuterClass
 import POGOProtos.Data.PlayerDataOuterClass
 import POGOProtos.Enums.PokemonIdOuterClass
 import POGOProtos.Enums.TutorialStateOuterClass
 import POGOProtos.Map.Fort.FortTypeOuterClass.FortType
 import POGOProtos.Networking.Envelopes.SignatureOuterClass
+import POGOProtos.Networking.Requests.Messages.CatchPokemonMessageOuterClass
+import POGOProtos.Networking.Requests.Messages.EvolvePokemonMessageOuterClass
+import POGOProtos.Networking.Requests.Messages.GetMapObjectsMessageOuterClass
 import POGOProtos.Networking.Requests.RequestTypeOuterClass.RequestType
 import POGOProtos.Networking.Responses.*
+import POGOProtos.Networking.Responses.CatchPokemonResponseOuterClass.CatchPokemonResponse.CatchStatus
+import POGOProtos.Settings.FortSettingsOuterClass
+import POGOProtos.Settings.InventorySettingsOuterClass
+import POGOProtos.Settings.LevelSettingsOuterClass
+import POGOProtos.Settings.MapSettingsOuterClass
 import com.google.common.geometry.S2CellId
 import com.google.common.geometry.S2LatLng
 import ink.abb.pogo.api.auth.CredentialProvider
@@ -18,18 +27,25 @@ import ink.abb.pogo.api.map.GetMapObjects
 import ink.abb.pogo.api.network.ActionQueue
 import ink.abb.pogo.api.network.ServerRequest
 import ink.abb.pogo.api.request.*
+import ink.abb.pogo.api.util.PokemonMetaRegistry
 import ink.abb.pogo.api.util.SystemTimeImpl
 import ink.abb.pogo.api.util.Time
 import okhttp3.OkHttpClient
 import rx.Observable
 import rx.subjects.ReplaySubject
 import java.util.*
+import java.util.concurrent.atomic.AtomicInteger
 
 class PoGoApiImpl(okHttpClient: OkHttpClient, val credentialProvider: CredentialProvider, val time: Time, override val deviceInfo: SignatureOuterClass.Signature.DeviceInfo) : PoGoApi {
     override var inventory: Inventory = Inventory()
     override var map: Map = Map()
     lateinit override var playerData: PlayerDataOuterClass.PlayerData
     lateinit override var playerProfile: GetPlayerProfileResponseOuterClass.GetPlayerProfileResponse
+
+    lateinit override var fortSettings: FortSettingsOuterClass.FortSettings
+    lateinit override var inventorySettings: InventorySettingsOuterClass.InventorySettings
+    lateinit override var levelSettings: LevelSettingsOuterClass.LevelSettings
+    lateinit override var mapSettings: MapSettingsOuterClass.MapSettings
 
     override fun currentTimeMillis(): Long {
         return time.currentTimeMillis()
@@ -66,8 +82,24 @@ class PoGoApiImpl(okHttpClient: OkHttpClient, val credentialProvider: Credential
         queueRequest(inventory)
     }
 
+    override fun handleRequest(serverRequest: ServerRequest) {
+        when (serverRequest.getRequestType()) {
+            else -> {}
+        }
+    }
+
     override fun handleResponse(serverRequest: ServerRequest) {
         when (serverRequest.getRequestType()) {
+            RequestType.DOWNLOAD_SETTINGS -> {
+                val response = serverRequest.response as DownloadSettingsResponseOuterClass.DownloadSettingsResponse
+                val settings = response.settings
+                this.fortSettings = settings.fortSettings
+                this.inventorySettings = settings.inventorySettings
+                this.levelSettings = settings.levelSettings
+                this.mapSettings = settings.mapSettings
+                actionQueue.rateLimits.put(RequestType.GET_MAP_OBJECTS, mapSettings.getMapObjectsMinRefreshSeconds.toInt() * 1000)
+                mapSettings.googleMapsApiKey
+            }
             RequestType.GET_PLAYER -> {
                 val response = serverRequest.response as GetPlayerResponseOuterClass.GetPlayerResponse
                 this.playerData = response.playerData
@@ -89,11 +121,14 @@ class PoGoApiImpl(okHttpClient: OkHttpClient, val credentialProvider: Credential
                             .withTutorialsCompleted(TutorialStateOuterClass.TutorialState.GYM_TUTORIAL)
                     queueRequest(tut)
                 }
+                playerData.currenciesList.forEach {
+                    this.inventory.currencies.getOrPut(it.name, { AtomicInteger(0) }).set(it.amount)
+                }
             }
-            RequestType.GET_PLAYER_PROFILE -> {
+            /*RequestType.GET_PLAYER_PROFILE -> {
                 val response = serverRequest.response as GetPlayerProfileResponseOuterClass.GetPlayerProfileResponse
                 this.playerProfile = response
-            }
+            }*/
             RequestType.GET_MAP_OBJECTS -> {
                 val response = serverRequest.response as GetMapObjectsResponseOuterClass.GetMapObjectsResponse
                 response.mapCellsList.forEach {
@@ -131,6 +166,35 @@ class PoGoApiImpl(okHttpClient: OkHttpClient, val credentialProvider: Credential
                     fort.fetchedDetails = true
                     fort.name = response.name
                     fort.description = response.description
+                }
+            }
+            RequestType.CATCH_POKEMON -> {
+                val response = serverRequest.response as CatchPokemonResponseOuterClass.CatchPokemonResponse
+                val status = response.status
+                if (status != CatchStatus.CATCH_ERROR) {
+                    val builder = serverRequest.getBuilder() as CatchPokemonMessageOuterClass.CatchPokemonMessageOrBuilder
+                    this.inventory.items.getOrPut(builder.pokeball, {AtomicInteger(0)}).andDecrement
+                }
+            }
+            RequestType.COLLECT_DAILY_DEFENDER_BONUS -> {
+                val response = serverRequest.response as CollectDailyDefenderBonusResponseOuterClass.CollectDailyDefenderBonusResponse
+                response.currencyTypeList.withIndex().forEach {
+                    val currencyType = it.value
+                    this.inventory.currencies.getOrPut(currencyType, { AtomicInteger(0) }).addAndGet(response.currencyAwardedList[it.index])
+                }
+            }
+            RequestType.EVOLVE_POKEMON -> {
+                val response = serverRequest.response as EvolvePokemonResponseOuterClass.EvolvePokemonResponse
+                val result = response.result
+                if (result == EvolvePokemonResponseOuterClass.EvolvePokemonResponse.Result.SUCCESS) {
+                    PokemonMetaRegistry.getMeta(response.evolvedPokemonData.pokemonId).family
+
+                    val builder = serverRequest.getBuilder() as EvolvePokemonMessageOuterClass.EvolvePokemonMessageOrBuilder
+
+                    val meta = PokemonMetaRegistry.getMeta(response.evolvedPokemonData.pokemonId)
+                    this.inventory.candies.getOrPut(meta.family, { AtomicInteger(0) }).addAndGet(response.candyAwarded - meta.candyToEvolve)
+                    this.inventory.pokemon.remove(builder.pokemonId)
+                    this.inventory.pokemon.put(response.evolvedPokemonData.id, BagPokemon(response.evolvedPokemonData))
                 }
             }
             else -> {
@@ -247,7 +311,6 @@ fun main(args: Array<String>) {
 
     val req = GetMapObjects(api)
     api.queueRequest(req).subscribe {
-        val response = it.response
         val first = api.map.getPokestops(api.latitude, api.longitude, 9).first()
         api.queueRequest(first.getFortDetails()).subscribe {
             println(it.response)

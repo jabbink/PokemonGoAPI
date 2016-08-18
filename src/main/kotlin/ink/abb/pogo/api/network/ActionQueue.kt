@@ -31,9 +31,7 @@ class ActionQueue(val poGoApi: PoGoApi, val okHttpClient: OkHttpClient, val cred
     val didAction = PublishSubject.create<Nothing>()
 
     val lastUseds = mutableMapOf<RequestTypeOuterClass.RequestType, Long>()
-    val rateLimits = mapOf(
-            Pair(RequestTypeOuterClass.RequestType.GET_MAP_OBJECTS, 10000)
-    )
+    val rateLimits = mutableMapOf<RequestTypeOuterClass.RequestType, Int>()
 
     init {
         didAction.subscribe({

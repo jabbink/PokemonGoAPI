@@ -1,7 +1,5 @@
 package ink.abb.pogo.api.cache
 
-import POGOProtos.Data.Player.PlayerCurrencyOuterClass.PlayerCurrency
-import POGOProtos.Data.Player.PlayerStatsOuterClass
 import POGOProtos.Data.Player.PlayerStatsOuterClass.PlayerStats
 import POGOProtos.Data.PokedexEntryOuterClass
 import POGOProtos.Enums.PokemonFamilyIdOuterClass.PokemonFamilyId
@@ -10,18 +8,21 @@ import POGOProtos.Inventory.AppliedItemOuterClass
 import POGOProtos.Inventory.EggIncubatorOuterClass.EggIncubator
 import POGOProtos.Inventory.InventoryDeltaOuterClass
 import POGOProtos.Inventory.Item.ItemIdOuterClass.ItemId
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicLong
 
 class Inventory {
-    val items = mutableMapOf<ItemId, Int>()
-    val pokemon = mutableSetOf<BagPokemon>()
+    val currencies = mutableMapOf<String, AtomicInteger>()
+    val items = mutableMapOf<ItemId, AtomicInteger>()
+    val pokemon = mutableMapOf<Long, BagPokemon>()
     var appliedItems = mutableListOf<AppliedItemOuterClass.AppliedItem>()
-    val candies = mutableMapOf<PokemonFamilyId, Int>()
+    val candies = mutableMapOf<PokemonFamilyId, AtomicInteger>()
 
     var eggIncubators = mutableListOf<EggIncubator>()
 
-    var size: Int = 350
+    var size = AtomicInteger(350)
 
-    var gems: Int = 0
+    var gems = AtomicInteger(0)
 
     lateinit var playerStats: PlayerStats
 
@@ -35,7 +36,7 @@ class Inventory {
                     this.appliedItems = itemData.appliedItems.itemList
                 }
                 if (itemData.hasCandy()) {
-                    this.candies.set(itemData.candy.familyId, itemData.candy.candy)
+                    this.candies.getOrPut(itemData.candy.familyId, { AtomicInteger(0) }).set(itemData.candy.candy)
                 }
                 if (itemData.hasEggIncubators()) {
                     this.eggIncubators = itemData.eggIncubators.eggIncubatorList
@@ -45,14 +46,14 @@ class Inventory {
                     itemData.inventoryUpgrades.inventoryUpgradesList.forEach {
                         total += it.additionalStorage
                     }
-                    size = total
+                    size.set(total)
                 }
                 if (itemData.hasItem()) {
-                    items.set(itemData.item.itemId, itemData.item.count)
+                    items.getOrPut(itemData.item.itemId, { AtomicInteger(0) }).set(itemData.item.count)
                 }
                 if (itemData.hasPlayerCurrency()) {
                     // ???
-                    this.gems = itemData.playerCurrency.gems
+                    this.gems.set(itemData.playerCurrency.gems)
                 }
                 if (itemData.hasPlayerStats()) {
                     this.playerStats = itemData.playerStats
@@ -61,7 +62,7 @@ class Inventory {
                     pokedex.set(itemData.pokedexEntry.pokemonId, itemData.pokedexEntry)
                 }
                 if (itemData.hasPokemonData()) {
-                    pokemon.add(BagPokemon(itemData.pokemonData))
+                    pokemon.put(itemData.pokemonData.id, BagPokemon(itemData.pokemonData))
                 }
             }
         }
