@@ -7,5 +7,7 @@ interface ServerRequest {
     fun build(poGoApi: PoGoApi): com.google.protobuf.GeneratedMessage
     fun getRequestType(): POGOProtos.Networking.Requests.RequestTypeOuterClass.RequestType
 
+    val response: com.google.protobuf.GeneratedMessage
+
     fun setResponse(payload: ByteString)
 }

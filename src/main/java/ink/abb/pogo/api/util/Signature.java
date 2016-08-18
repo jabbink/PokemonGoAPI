@@ -1,5 +1,6 @@
 package ink.abb.pogo.api.util;
 
+import POGOProtos.Networking.Envelopes.AuthTicketOuterClass;
 import POGOProtos.Networking.Envelopes.RequestEnvelopeOuterClass;
 import POGOProtos.Networking.Envelopes.SignatureOuterClass;
 import POGOProtos.Networking.Envelopes.Unknown6OuterClass;
@@ -18,37 +19,72 @@ public class Signature {
     /**
      * Given a fully built request, set the signature correctly.
      *
-     * @param api     the api
+     * @param poGoApi     the api
      * @param builder the requestenvelop builder
      */
-    public static void setSignature(PoGoApi api, RequestEnvelopeOuterClass.RequestEnvelope.Builder builder) {
-        if (builder.getAuthTicket() == null) {
-            //System.out.println("Ticket == null");
-            return;
-        }
-
-        long curTime = api.currentTimeMillis();
-
-        byte[] authTicketBA = builder.getAuthTicket().toByteArray();
+    public static void setSignature(PoGoApi poGoApi, RequestEnvelopeOuterClass.RequestEnvelope.Builder builder) {
+        long curTime = poGoApi.currentTimeMillis();
+        long timestampSinceStart = curTime - poGoApi.getStartTime();
 
         SignatureOuterClass.Signature.Builder sigBuilder = SignatureOuterClass.Signature.newBuilder()
-                .setLocationHash1(getLocationHash1(api, authTicketBA, builder))
-                .setLocationHash2(getLocationHash2(api, builder))
-                .setSessionHash(ByteString.copyFrom(api.getSessionHash()))
-                .setTimestamp(api.currentTimeMillis())
-                .setTimestampSinceStart(curTime - api.getStartTime());
+                .setLocationHash2(getLocationHash2(poGoApi, builder))
+                .setSessionHash(ByteString.copyFrom(poGoApi.getSessionHash()))
+                .setTimestamp(poGoApi.currentTimeMillis())
+                .setTimestampSinceStart(timestampSinceStart);
 
-        /*SignatureOuterClass.Signature.DeviceInfo deviceInfo = api.getDeviceInfo();
-        if (deviceInfo != null) {
-            sigBuilder.setDeviceInfo(deviceInfo);
-        }*/
-
-        for (RequestOuterClass.Request serverRequest : builder.getRequestsList()) {
-            byte[] request = serverRequest.toByteArray();
-            sigBuilder.addRequestHash(getRequestHash(authTicketBA, request));
+        AuthTicketOuterClass.AuthTicket authTicket = builder.getAuthTicket();
+        byte[] authTicketBA = null;
+        if (authTicket != null) {
+            authTicketBA = builder.getAuthTicket().toByteArray();
         }
 
-        // TODO: Call encrypt function on this
+        if (authTicketBA != null) {
+            sigBuilder.setLocationHash1(getLocationHash1(poGoApi, authTicketBA, builder));
+        }
+
+
+        SignatureOuterClass.Signature.DeviceInfo deviceInfo = poGoApi.getDeviceInfo();
+        if (deviceInfo != null) {
+            sigBuilder.setDeviceInfo(deviceInfo);
+        }
+
+        SignatureOuterClass.Signature.LocationFix.Builder locationFix =
+                SignatureOuterClass.Signature.LocationFix.newBuilder()
+                        .setProvider("fused")
+                        .setTimestampSnapshot(timestampSinceStart - (long) (Math.random() * 300))
+                        .setLatitude((float) poGoApi.getLatitude())
+                        .setLongitude((float) poGoApi.getLongitude())
+                        .setHorizontalAccuracy((float) (Math.random() * 2.0 - 1.0))
+                        .setVerticalAccuracy((float) (Math.random() * 2.0 + 10.0))
+                        .setProviderStatus(3)
+                        .setLocationType(1);
+
+        sigBuilder.addLocationFix(locationFix.build());
+
+        sigBuilder.setTimestampSinceStart(timestampSinceStart);
+
+        SignatureOuterClass.Signature.ActivityStatus.Builder activityStatus = SignatureOuterClass.Signature.ActivityStatus.newBuilder()
+                .setUnknownStatus(true)
+                .setWalking(true)
+                .setStationary(true)
+                .setAutomotive(true)
+                .setTilting(true);
+
+        sigBuilder.setActivityStatus(activityStatus.build());
+
+        sigBuilder.setUnknown25(-8537042734809897855L);
+
+        /*SignatureOuterClass.Signature.SensorInfo.Builder sensorInfo = SignatureOuterClass.Signature.SensorInfo.newBuilder()
+                .setTimestampSnapshot(timestampSinceStart - (long) (Math.random() * 300));*/
+
+
+        if (authTicketBA != null) {
+            for (RequestOuterClass.Request serverRequest : builder.getRequestsList()) {
+                byte[] request = serverRequest.toByteArray();
+                sigBuilder.addRequestHash(getRequestHash(authTicketBA, request));
+            }
+        }
+
         byte[] uk2 = sigBuilder.build().toByteArray();
         byte[] iv = new byte[32];
         new Random().nextBytes(iv);

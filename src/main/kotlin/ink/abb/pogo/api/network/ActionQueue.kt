@@ -3,6 +3,7 @@ package ink.abb.pogo.api.network
 import POGOProtos.Networking.Envelopes.AuthTicketOuterClass
 import POGOProtos.Networking.Envelopes.RequestEnvelopeOuterClass
 import POGOProtos.Networking.Envelopes.ResponseEnvelopeOuterClass
+import POGOProtos.Networking.Envelopes.SignatureOuterClass
 import POGOProtos.Networking.Requests.RequestOuterClass
 import POGOProtos.Networking.Requests.RequestTypeOuterClass
 import ink.abb.pogo.api.PoGoApi
@@ -17,11 +18,12 @@ import rx.subjects.PublishSubject
 import rx.subjects.ReplaySubject
 import java.io.ByteArrayOutputStream
 import java.io.IOException
+import java.util.*
 import java.util.concurrent.ConcurrentLinkedDeque
 import java.util.concurrent.TimeUnit
 
-class ActionQueue(val poGoApi: PoGoApi, val okHttpClient: OkHttpClient, val credentialProvider: CredentialProvider) {
-    val maxItems = 5
+class ActionQueue(val poGoApi: PoGoApi, val okHttpClient: OkHttpClient, val credentialProvider: CredentialProvider, val deviceInfo: SignatureOuterClass.Signature.DeviceInfo) {
+    val maxItems = 10
 
     val queueInterval = 1000L
 
@@ -68,6 +70,8 @@ class ActionQueue(val poGoApi: PoGoApi, val okHttpClient: OkHttpClient, val cred
     var apiEndpoint = "https://pgorelease.nianticlabs.com/plfe/rpc"
     var authTicket: AuthTicketOuterClass.AuthTicket? = null
 
+    private var requestId: Long = Random().nextLong()
+
     private fun sendRequests(requests: List<Pair<ServerRequest, ReplaySubject<ServerRequest>>>) {
         val envelope = RequestEnvelopeOuterClass.RequestEnvelope.newBuilder()
         envelope.setAltitude(poGoApi.altitude).setLatitude(poGoApi.latitude).setLongitude(poGoApi.longitude)
@@ -85,6 +89,8 @@ class ActionQueue(val poGoApi: PoGoApi, val okHttpClient: OkHttpClient, val cred
         })
         envelope.setStatusCode(2)
                 .setUnknown12(989)
+
+        envelope.setRequestId(requestId++);
 
         Signature.setSignature(poGoApi, envelope)
 
@@ -142,7 +148,13 @@ class ActionQueue(val poGoApi: PoGoApi, val okHttpClient: OkHttpClient, val cred
                      * so might as well throw an exception and leave this loop  */
                     if (payload != null) {
                         serverReq.first.setResponse(payload)
-                        serverReq.second.onNext(serverReq.first)
+                        poGoApi.handleResponse(serverReq.first)
+                        try {
+                            serverReq.second.onNext(serverReq.first)
+                        } catch (e: Exception) {
+                            System.err.println("Error in handler")
+                            e.printStackTrace()
+                        }
                     }
                     count++
                 }
