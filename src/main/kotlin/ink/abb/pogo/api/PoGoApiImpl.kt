@@ -61,15 +61,9 @@ class PoGoApiImpl(okHttpClient: OkHttpClient, val credentialProvider: Credential
         val getPlayer = GetPlayer("0.33.1")
         val settings = DownloadSettings()
         val inventory = GetInventory().withLastTimestampMs(0)
-        queueRequest(getPlayer).subscribe {
-            println(it.response)
-        }
-        queueRequest(settings).subscribe {
-            println(it.response)
-        }
-        queueRequest(inventory).subscribe {
-            println(it.response)
-        }
+        queueRequest(getPlayer)
+        queueRequest(settings)
+        queueRequest(inventory)
     }
 
     override fun handleResponse(serverRequest: ServerRequest) {
@@ -119,7 +113,7 @@ class PoGoApiImpl(okHttpClient: OkHttpClient, val credentialProvider: Credential
                             })
                     map.setGyms(it.s2CellId, gyms)
                     map.setPokestops(it.s2CellId, pokestops)
-                    map.setPokemon(it.s2CellId, mapPokemon)
+                    map.setPokemon(it.s2CellId, this.currentTimeMillis(), mapPokemon)
                 }
             }
             RequestType.GET_INVENTORY -> {
@@ -128,11 +122,13 @@ class PoGoApiImpl(okHttpClient: OkHttpClient, val credentialProvider: Credential
             }
             RequestType.FORT_DETAILS -> {
                 val response = serverRequest.response as FortDetailsResponseOuterClass.FortDetailsResponse
-                val cellId = S2CellId.fromLatLng(S2LatLng.fromDegrees(response.latitude, response.longitude)).parent(15)
-                val fort = map.getMapCell(cellId.id()).pokestops.find { it.id == response.fortId } ?: map.getMapCell(cellId.id()).gyms.find { it.id == response.fortId }
+                val cellId = S2CellId.fromLatLng(S2LatLng.fromDegrees(response.latitude, response.longitude)).parent(15).id()
+                val mapCell = map.getMapCell(cellId)
+                val fort = mapCell.pokestops.find { it.id == response.fortId } ?: mapCell.gyms.find { it.id == response.fortId }
                 if (fort == null) {
-                    println("fort was null?")
+                    // should never happen
                 } else {
+                    fort.fetchedDetails = true
                     fort.name = response.name
                     fort.description = response.description
                 }
@@ -252,13 +248,12 @@ fun main(args: Array<String>) {
     val req = GetMapObjects(api)
     api.queueRequest(req).subscribe {
         val response = it.response
-        println(response)
-        /*val first = api.map.getPokestops(api.latitude, api.longitude, 9).first()
+        val first = api.map.getPokestops(api.latitude, api.longitude, 9).first()
         api.queueRequest(first.getFortDetails()).subscribe {
             println(it.response)
             println(first.name)
             println(first.description)
-        }*/
+        }
     }
 
     /*val req2 = GetMapObjects(api)

@@ -107,7 +107,7 @@ class ApiGenerator implements Plugin<Project> {
 
                 if (!it.name.startsWith("add")) {
                     def nameLower = name.toLowerCase()
-                    if ((nameLower.contains("altitude") || nameLower.contains("longitude") || nameLower.contains("latitude")) && !nameLower.contains("fort") && !nameLower.contains("gym")) {
+                    if (!messageClass.simpleName.contains("FortDetails") && (nameLower.contains("altitude") || nameLower.contains("longitude") || nameLower.contains("latitude")) && !nameLower.contains("fort") && !nameLower.contains("gym")) {
                         needApiLocation.add(it.name)
                     } else {
                         createSetters = true

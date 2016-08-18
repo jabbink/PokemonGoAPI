@@ -31,9 +31,10 @@ class Map {
         return mapCells.getOrPut(cellId, { MapCell(cellId) })
     }
 
-    fun setPokemon(cellId: Long, mapPokemon: Set<MapPokemon>) {
+    fun setPokemon(cellId: Long, time: Long, mapPokemon: Set<MapPokemon>) {
         val mapCell = getMapCell(cellId)
         // Fully override Pokemon as they might've expired
+        mapCell.lastUpdated = time
         mapCell.pokemon = mapPokemon
     }
 

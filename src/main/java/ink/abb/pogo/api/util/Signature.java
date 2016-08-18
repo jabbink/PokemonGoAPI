@@ -51,7 +51,7 @@ public class Signature {
         SignatureOuterClass.Signature.LocationFix.Builder locationFix =
                 SignatureOuterClass.Signature.LocationFix.newBuilder()
                         .setProvider("fused")
-                        .setTimestampSnapshot(timestampSinceStart - (long) (Math.random() * 300))
+                        .setTimestampSnapshot(Math.max(timestampSinceStart - (long) (Math.random() * 300), 0))
                         .setLatitude((float) poGoApi.getLatitude())
                         .setLongitude((float) poGoApi.getLongitude())
                         .setHorizontalAccuracy((float) (Math.random() * 2.0 - 1.0))
@@ -61,21 +61,19 @@ public class Signature {
 
         sigBuilder.addLocationFix(locationFix.build());
 
-        sigBuilder.setTimestampSinceStart(timestampSinceStart);
-
-        SignatureOuterClass.Signature.ActivityStatus.Builder activityStatus = SignatureOuterClass.Signature.ActivityStatus.newBuilder()
+        /*SignatureOuterClass.Signature.ActivityStatus.Builder activityStatus = SignatureOuterClass.Signature.ActivityStatus.newBuilder()
                 .setUnknownStatus(true)
                 .setWalking(true)
                 .setStationary(true)
                 .setAutomotive(true)
                 .setTilting(true);
 
-        sigBuilder.setActivityStatus(activityStatus.build());
+        sigBuilder.setActivityStatus(activityStatus.build());*/
 
         sigBuilder.setUnknown25(-8537042734809897855L);
 
         /*SignatureOuterClass.Signature.SensorInfo.Builder sensorInfo = SignatureOuterClass.Signature.SensorInfo.newBuilder()
-                .setTimestampSnapshot(timestampSinceStart - (long) (Math.random() * 300));*/
+                .setTimestampSnapshot(Math.max(timestampSinceStart - (long) (Math.random() * 300), 0));*/
 
 
         if (authTicketBA != null) {
