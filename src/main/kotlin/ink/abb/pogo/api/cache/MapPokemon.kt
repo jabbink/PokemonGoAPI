@@ -4,6 +4,7 @@ import POGOProtos.Enums.PokemonIdOuterClass
 import POGOProtos.Map.Fort.FortDataOuterClass
 import POGOProtos.Map.Pokemon.MapPokemonOuterClass
 import POGOProtos.Map.Pokemon.WildPokemonOuterClass
+import ink.abb.pogo.api.util.Time
 
 class MapPokemon {
     lateinit private var encounterKind: EncounterKind
@@ -22,7 +23,12 @@ class MapPokemon {
 
     private var longitude: Double = 0.0
 
-    constructor(proto: MapPokemonOuterClass.MapPokemon) {
+    private val time: Time
+
+    val valid: Boolean
+        get() = time.currentTimeMillis() < expirationTimestampMs
+
+    constructor(proto: MapPokemonOuterClass.MapPokemon, time: Time) {
         this.encounterKind = EncounterKind.NORMAL;
         this.spawnPointId = proto.getSpawnPointId();
         this.encounterId = proto.getEncounterId();
@@ -31,9 +37,10 @@ class MapPokemon {
         this.expirationTimestampMs = proto.getExpirationTimestampMs();
         this.latitude = proto.getLatitude();
         this.longitude = proto.getLongitude();
+        this.time = time
 
     }
-    constructor(proto: WildPokemonOuterClass.WildPokemon) {
+    constructor(proto: WildPokemonOuterClass.WildPokemon, time: Time) {
         this.encounterKind = EncounterKind.NORMAL;
         this.spawnPointId = proto.getSpawnPointId();
         this.encounterId = proto.getEncounterId();
@@ -42,9 +49,10 @@ class MapPokemon {
         this.expirationTimestampMs = proto.getTimeTillHiddenMs().toLong();
         this.latitude = proto.getLatitude();
         this.longitude = proto.getLongitude();
+        this.time = time
 
     }
-    constructor(proto: FortDataOuterClass.FortData) {
+    constructor(proto: FortDataOuterClass.FortData, time: Time) {
         this.spawnPointId = proto.getLureInfo().getFortId();
         this.encounterId = proto.getLureInfo().getEncounterId();
         this.pokemonId = proto.getLureInfo().getActivePokemonId();
@@ -54,6 +62,7 @@ class MapPokemon {
         this.latitude = proto.getLatitude();
         this.longitude = proto.getLongitude();
         this.encounterKind = EncounterKind.DISK;
+        this.time = time
     }
 
 
@@ -61,4 +70,10 @@ class MapPokemon {
         NORMAL,
         DISK
     }
+
+    override fun toString(): String{
+        return "MapPokemon(encounterKind=$encounterKind, spawnPointId='$spawnPointId', encounterId=$encounterId, pokemonId=$pokemonId, pokemonIdValue=$pokemonIdValue, expirationTimestampMs=$expirationTimestampMs, latitude=$latitude, longitude=$longitude)"
+    }
+
+
 }

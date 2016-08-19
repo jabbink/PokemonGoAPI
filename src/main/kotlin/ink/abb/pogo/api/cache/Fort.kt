@@ -8,7 +8,7 @@ abstract class Fort(val fortData: FortDataOuterClass.FortData) {
 
     var fetchedDetails = false
 
-    lateinit var name: String
+    var name: String? = null
     var description: String? = null
 
     fun equals(that: Fort): Boolean {
@@ -17,5 +17,9 @@ abstract class Fort(val fortData: FortDataOuterClass.FortData) {
 
     fun getFortDetails(): FortDetails {
         return FortDetails().withFortId(id).withLatitude(fortData.latitude).withLongitude(fortData.longitude)
+    }
+
+    override fun toString(): String{
+        return "Fort(fortData=$fortData, id='$id', fetchedDetails=$fetchedDetails, name='$name', description=$description)"
     }
 }

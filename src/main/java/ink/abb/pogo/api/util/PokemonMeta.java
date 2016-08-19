@@ -3,108 +3,368 @@ package ink.abb.pogo.api.util;
 import POGOProtos.Enums.PokemonFamilyIdOuterClass.PokemonFamilyId;
 import POGOProtos.Enums.PokemonIdOuterClass.PokemonId;
 import POGOProtos.Enums.PokemonMoveOuterClass.PokemonMove;
-import lombok.Getter;
-import lombok.Setter;
 
 public class PokemonMeta {
-    @Getter
-    @Setter
+    public String getTemplateId() {
+        return templateId;
+    }
+
+    public void setTemplateId(String templateId) {
+        this.templateId = templateId;
+    }
+
+    public PokemonFamilyId getFamily() {
+        return family;
+    }
+
+    public void setFamily(PokemonFamilyId family) {
+        this.family = family;
+    }
+
+    public PokemonClass getPokemonClass() {
+        return pokemonClass;
+    }
+
+    public void setPokemonClass(PokemonClass pokemonClass) {
+        this.pokemonClass = pokemonClass;
+    }
+
+    public PokemonType getType2() {
+        return type2;
+    }
+
+    public void setType2(PokemonType type2) {
+        this.type2 = type2;
+    }
+
+    public double getPokedexHeightM() {
+        return pokedexHeightM;
+    }
+
+    public void setPokedexHeightM(double pokedexHeightM) {
+        this.pokedexHeightM = pokedexHeightM;
+    }
+
+    public double getHeightStdDev() {
+        return heightStdDev;
+    }
+
+    public void setHeightStdDev(double heightStdDev) {
+        this.heightStdDev = heightStdDev;
+    }
+
+    public int getBaseStamina() {
+        return baseStamina;
+    }
+
+    public void setBaseStamina(int baseStamina) {
+        this.baseStamina = baseStamina;
+    }
+
+    public double getCylRadiusM() {
+        return cylRadiusM;
+    }
+
+    public void setCylRadiusM(double cylRadiusM) {
+        this.cylRadiusM = cylRadiusM;
+    }
+
+    public double getBaseFleeRate() {
+        return baseFleeRate;
+    }
+
+    public void setBaseFleeRate(double baseFleeRate) {
+        this.baseFleeRate = baseFleeRate;
+    }
+
+    public int getBaseAttack() {
+        return baseAttack;
+    }
+
+    public void setBaseAttack(int baseAttack) {
+        this.baseAttack = baseAttack;
+    }
+
+    public double getDiskRadiusM() {
+        return diskRadiusM;
+    }
+
+    public void setDiskRadiusM(double diskRadiusM) {
+        this.diskRadiusM = diskRadiusM;
+    }
+
+    public double getCollisionRadiusM() {
+        return collisionRadiusM;
+    }
+
+    public void setCollisionRadiusM(double collisionRadiusM) {
+        this.collisionRadiusM = collisionRadiusM;
+    }
+
+    public double getPokedexWeightKg() {
+        return pokedexWeightKg;
+    }
+
+    public void setPokedexWeightKg(double pokedexWeightKg) {
+        this.pokedexWeightKg = pokedexWeightKg;
+    }
+
+    public MovementType getMovementType() {
+        return movementType;
+    }
+
+    public void setMovementType(MovementType movementType) {
+        this.movementType = movementType;
+    }
+
+    public PokemonType getType1() {
+        return type1;
+    }
+
+    public void setType1(PokemonType type1) {
+        this.type1 = type1;
+    }
+
+    public double getCollisionHeadRadiusM() {
+        return collisionHeadRadiusM;
+    }
+
+    public void setCollisionHeadRadiusM(double collisionHeadRadiusM) {
+        this.collisionHeadRadiusM = collisionHeadRadiusM;
+    }
+
+    public double getMovementTimerS() {
+        return movementTimerS;
+    }
+
+    public void setMovementTimerS(double movementTimerS) {
+        this.movementTimerS = movementTimerS;
+    }
+
+    public double getJumpTimeS() {
+        return jumpTimeS;
+    }
+
+    public void setJumpTimeS(double jumpTimeS) {
+        this.jumpTimeS = jumpTimeS;
+    }
+
+    public double getModelScale() {
+        return modelScale;
+    }
+
+    public void setModelScale(double modelScale) {
+        this.modelScale = modelScale;
+    }
+
+    public String getUniqueId() {
+        return uniqueId;
+    }
+
+    public void setUniqueId(String uniqueId) {
+        this.uniqueId = uniqueId;
+    }
+
+    public int getBaseDefense() {
+        return baseDefense;
+    }
+
+    public void setBaseDefense(int baseDefense) {
+        this.baseDefense = baseDefense;
+    }
+
+    public int getAttackTimerS() {
+        return attackTimerS;
+    }
+
+    public void setAttackTimerS(int attackTimerS) {
+        this.attackTimerS = attackTimerS;
+    }
+
+    public double getWeightStdDev() {
+        return weightStdDev;
+    }
+
+    public void setWeightStdDev(double weightStdDev) {
+        this.weightStdDev = weightStdDev;
+    }
+
+    public double getCylHeightM() {
+        return cylHeightM;
+    }
+
+    public void setCylHeightM(double cylHeightM) {
+        this.cylHeightM = cylHeightM;
+    }
+
+    public int getCandyToEvolve() {
+        return candyToEvolve;
+    }
+
+    public void setCandyToEvolve(int candyToEvolve) {
+        this.candyToEvolve = candyToEvolve;
+    }
+
+    public double getCollisionHeightM() {
+        return collisionHeightM;
+    }
+
+    public void setCollisionHeightM(double collisionHeightM) {
+        this.collisionHeightM = collisionHeightM;
+    }
+
+    public double getShoulderModeScale() {
+        return shoulderModeScale;
+    }
+
+    public void setShoulderModeScale(double shoulderModeScale) {
+        this.shoulderModeScale = shoulderModeScale;
+    }
+
+    public double getBaseCaptureRate() {
+        return baseCaptureRate;
+    }
+
+    public void setBaseCaptureRate(double baseCaptureRate) {
+        this.baseCaptureRate = baseCaptureRate;
+    }
+
+    public PokemonId getParentId() {
+        return parentId;
+    }
+
+    public void setParentId(PokemonId parentId) {
+        this.parentId = parentId;
+    }
+
+    public double getCylGroundM() {
+        return cylGroundM;
+    }
+
+    public void setCylGroundM(double cylGroundM) {
+        this.cylGroundM = cylGroundM;
+    }
+
+    public PokemonMove[] getQuickMoves() {
+        return quickMoves;
+    }
+
+    public void setQuickMoves(PokemonMove[] quickMoves) {
+        this.quickMoves = quickMoves;
+    }
+
+    public PokemonMove[] getCinematicMoves() {
+        return cinematicMoves;
+    }
+
+    public void setCinematicMoves(PokemonMove[] cinematicMoves) {
+        this.cinematicMoves = cinematicMoves;
+    }
+
+    public int getNumber() {
+        return number;
+    }
+
+    public void setNumber(int number) {
+        this.number = number;
+    }
+
     private String templateId;
-    @Getter
-    @Setter
+
+
     private PokemonFamilyId family;
-    @Getter
-    @Setter
+
+
     private PokemonClass pokemonClass;
-    @Getter
-    @Setter
+
+
     private PokemonType type2;
-    @Getter
-    @Setter
+
+
     private double pokedexHeightM;
-    @Getter
-    @Setter
+
+
     private double heightStdDev;
-    @Getter
-    @Setter
+
+
     private int baseStamina;
-    @Getter
-    @Setter
+
+
     private double cylRadiusM;
-    @Getter
-    @Setter
+
+
     private double baseFleeRate;
-    @Getter
-    @Setter
+
+
     private int baseAttack;
-    @Getter
-    @Setter
+
+
     private double diskRadiusM;
-    @Getter
-    @Setter
+
+
     private double collisionRadiusM;
-    @Getter
-    @Setter
+
+
     private double pokedexWeightKg;
-    @Getter
-    @Setter
+
+
     private MovementType movementType;
-    @Getter
-    @Setter
+
+
     private PokemonType type1;
-    @Getter
-    @Setter
+
+
     private double collisionHeadRadiusM;
-    @Getter
-    @Setter
+
+
     private double movementTimerS;
-    @Getter
-    @Setter
+
+
     private double jumpTimeS;
-    @Getter
-    @Setter
+
+
     private double modelScale;
-    @Getter
-    @Setter
+
+
     private String uniqueId;
-    @Getter
-    @Setter
+
+
     private int baseDefense;
-    @Getter
-    @Setter
+
+
     private int attackTimerS;
-    @Getter
-    @Setter
+
+
     private double weightStdDev;
-    @Getter
-    @Setter
+
+
     private double cylHeightM;
-    @Getter
-    @Setter
+
+
     private int candyToEvolve;
-    @Getter
-    @Setter
+
+
     private double collisionHeightM;
-    @Getter
-    @Setter
+
+
     private double shoulderModeScale;
-    @Getter
-    @Setter
+
+
     private double baseCaptureRate;
-    @Getter
-    @Setter
+
+
     private PokemonId parentId;
-    @Getter
-    @Setter
+
+
     private double cylGroundM;
-    @Getter
-    @Setter
+
+
     private PokemonMove[] quickMoves;
-    @Getter
-    @Setter
+
+
     private PokemonMove[] cinematicMoves;
-    @Getter
-    @Setter
+
+
     private int number;
 
     public enum PokemonClass {
@@ -140,6 +400,7 @@ public class PokemonMeta {
         STEEL,
         DARK;
     }
+
     public enum MovementType {
         PSYCHIC,
         FLYING,

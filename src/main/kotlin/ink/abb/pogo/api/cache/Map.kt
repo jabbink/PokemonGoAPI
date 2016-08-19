@@ -23,7 +23,7 @@ class Map {
 
     fun getPokemon(latitude: Double, longitude: Double, width: Int = 3): List<MapPokemon> {
         return getCellIds(latitude, longitude, width).flatMap {
-            getMapCell(it).pokemon
+            getMapCell(it).pokemon.filter { it.valid }
         }
     }
 
