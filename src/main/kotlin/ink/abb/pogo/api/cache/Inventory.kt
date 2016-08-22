@@ -8,19 +8,20 @@ import POGOProtos.Inventory.AppliedItemOuterClass
 import POGOProtos.Inventory.EggIncubatorOuterClass.EggIncubator
 import POGOProtos.Inventory.InventoryDeltaOuterClass
 import POGOProtos.Inventory.Item.ItemIdOuterClass.ItemId
+import ink.abb.pogo.api.PoGoApi
 import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.atomic.AtomicLong
 
-class Inventory {
+class Inventory(val poGoApi: PoGoApi) {
     var currencies = mutableMapOf<String, AtomicInteger>()
     var items = mutableMapOf<ItemId, AtomicInteger>()
     var pokemon = mutableMapOf<Long, BagPokemon>()
+    var eggs = mutableMapOf<Long, BagPokemon>()
     var appliedItems = mutableListOf<AppliedItemOuterClass.AppliedItem>()
     var candies = mutableMapOf<PokemonFamilyId, AtomicInteger>()
 
     var eggIncubators = mutableListOf<EggIncubator>()
 
-    var size = AtomicInteger(350)
+    var maxSize = AtomicInteger(350)
 
     var gems = AtomicInteger(0)
 
@@ -28,12 +29,27 @@ class Inventory {
 
     var pokedex = mutableMapOf<PokemonIdOuterClass.PokemonId, PokedexEntryOuterClass.PokedexEntry>()
 
+    val hasPokeballs: Boolean
+        get() {
+            var totalCount = 0
+            setOf(ItemId.ITEM_POKE_BALL, ItemId.ITEM_GREAT_BALL, ItemId.ITEM_MASTER_BALL, ItemId.ITEM_ULTRA_BALL).forEach {
+                totalCount += items.getOrPut(it, { AtomicInteger(0) }).get()
+            }
+            return totalCount > 0
+        }
+
+    val size: Int
+        get() {
+            return items.map { it.value.get() }.fold(0, { a: Int, b: Int -> a + b })
+        }
+
     fun update(inventoryDelta: InventoryDeltaOuterClass.InventoryDelta) {
         val items: MutableMap<ItemId, AtomicInteger>
         val pokemon: MutableMap<Long, BagPokemon>
+        val eggs: MutableMap<Long, BagPokemon>
         val candies: MutableMap<PokemonFamilyId, AtomicInteger>
 
-        val size: AtomicInteger
+        val maxSize: AtomicInteger
 
         val gems: AtomicInteger
 
@@ -42,9 +58,10 @@ class Inventory {
         if (inventoryDelta.originalTimestampMs == 0L) {
             items = mutableMapOf<ItemId, AtomicInteger>()
             pokemon = mutableMapOf<Long, BagPokemon>()
+            eggs = mutableMapOf<Long, BagPokemon>()
             candies = mutableMapOf<PokemonFamilyId, AtomicInteger>()
 
-            size = AtomicInteger(350)
+            maxSize = AtomicInteger(350)
 
             gems = AtomicInteger(0)
 
@@ -52,8 +69,9 @@ class Inventory {
         } else {
             items = this.items
             pokemon = this.pokemon
+            eggs = this.eggs
             candies = this.candies
-            size = this.size
+            maxSize = this.maxSize
             gems = this.gems
             pokedex = this.pokedex
         }
@@ -73,7 +91,7 @@ class Inventory {
                 itemData.inventoryUpgrades.inventoryUpgradesList.forEach {
                     total += it.additionalStorage
                 }
-                size.set(total)
+                maxSize.set(total)
             }
             if (itemData.hasItem()) {
                 items.getOrPut(itemData.item.itemId, { AtomicInteger(0) }).set(itemData.item.count)
@@ -89,12 +107,17 @@ class Inventory {
                 pokedex.set(itemData.pokedexEntry.pokemonId, itemData.pokedexEntry)
             }
             if (itemData.hasPokemonData()) {
-                pokemon.put(itemData.pokemonData.id, BagPokemon(itemData.pokemonData))
+                if (itemData.pokemonData.isEgg) {
+                    eggs.put(itemData.pokemonData.id, BagPokemon(poGoApi, itemData.pokemonData))
+                } else {
+                    pokemon.put(itemData.pokemonData.id, BagPokemon(poGoApi, itemData.pokemonData))
+                }
             }
         }
         if (inventoryDelta.originalTimestampMs == 0L) {
             this.items = items
             this.pokemon = pokemon
+            this.eggs = eggs
             this.candies = candies
             this.pokedex = pokedex
         }

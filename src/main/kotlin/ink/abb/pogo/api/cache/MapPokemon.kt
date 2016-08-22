@@ -4,74 +4,75 @@ import POGOProtos.Enums.PokemonIdOuterClass
 import POGOProtos.Map.Fort.FortDataOuterClass
 import POGOProtos.Map.Pokemon.MapPokemonOuterClass
 import POGOProtos.Map.Pokemon.WildPokemonOuterClass
-import ink.abb.pogo.api.util.Time
+import ink.abb.pogo.api.PoGoApi
 
 class MapPokemon {
-    lateinit private var encounterKind: EncounterKind
+    val encounterKind: EncounterKind
 
-    lateinit private var spawnPointId: String
+    val spawnPointId: String
 
-    var encounterId: Long = 0
+    val encounterId: Long
 
-    lateinit private var pokemonId: PokemonIdOuterClass.PokemonId
+    val pokemonId: PokemonIdOuterClass.PokemonId
 
-    private var pokemonIdValue: Int = 0
+    val pokemonIdValue: Int
 
-    private var expirationTimestampMs: Long = 0
+    val expirationTimestampMs: Long
 
-    private var latitude: Double = 0.0
+    val latitude: Double
 
-    private var longitude: Double = 0.0
+    val longitude: Double
 
-    private val time: Time
+    val poGoApi: PoGoApi
 
     val valid: Boolean
-        get() = time.currentTimeMillis() < expirationTimestampMs
+        get() = poGoApi.currentTimeMillis() < expirationTimestampMs
 
-    constructor(proto: MapPokemonOuterClass.MapPokemon, time: Time) {
-        this.encounterKind = EncounterKind.NORMAL;
-        this.spawnPointId = proto.getSpawnPointId();
-        this.encounterId = proto.getEncounterId();
-        this.pokemonId = proto.getPokemonId();
-        this.pokemonIdValue = proto.getPokemonIdValue();
-        this.expirationTimestampMs = proto.getExpirationTimestampMs();
-        this.latitude = proto.getLatitude();
-        this.longitude = proto.getLongitude();
-        this.time = time
-
-    }
-    constructor(proto: WildPokemonOuterClass.WildPokemon, time: Time) {
-        this.encounterKind = EncounterKind.NORMAL;
-        this.spawnPointId = proto.getSpawnPointId();
-        this.encounterId = proto.getEncounterId();
-        this.pokemonId = proto.getPokemonData().getPokemonId();
-        this.pokemonIdValue = proto.getPokemonData().getPokemonIdValue();
-        this.expirationTimestampMs = proto.getTimeTillHiddenMs().toLong();
-        this.latitude = proto.getLatitude();
-        this.longitude = proto.getLongitude();
-        this.time = time
-
-    }
-    constructor(proto: FortDataOuterClass.FortData, time: Time) {
-        this.spawnPointId = proto.getLureInfo().getFortId();
-        this.encounterId = proto.getLureInfo().getEncounterId();
-        this.pokemonId = proto.getLureInfo().getActivePokemonId();
-        this.pokemonIdValue = proto.getLureInfo().getActivePokemonIdValue();
-        this.expirationTimestampMs = proto.getLureInfo()
-                .getLureExpiresTimestampMs();
-        this.latitude = proto.getLatitude();
-        this.longitude = proto.getLongitude();
-        this.encounterKind = EncounterKind.DISK;
-        this.time = time
+    constructor(poGoApi: PoGoApi, proto: MapPokemonOuterClass.MapPokemon) {
+        this.encounterKind = EncounterKind.NORMAL
+        this.spawnPointId = proto.spawnPointId
+        this.encounterId = proto.encounterId
+        this.pokemonId = proto.pokemonId
+        this.pokemonIdValue = proto.pokemonIdValue
+        this.expirationTimestampMs = proto.expirationTimestampMs
+        this.latitude = proto.latitude
+        this.longitude = proto.longitude
+        this.poGoApi = poGoApi
     }
 
+    constructor(poGoApi: PoGoApi, proto: WildPokemonOuterClass.WildPokemon) {
+        this.encounterKind = EncounterKind.NORMAL
+        this.spawnPointId = proto.spawnPointId
+        this.encounterId = proto.encounterId
+        this.pokemonId = proto.pokemonData.pokemonId
+        this.pokemonIdValue = proto.pokemonData.pokemonIdValue
+        this.expirationTimestampMs = proto.timeTillHiddenMs.toLong()
+        this.latitude = proto.latitude
+        this.longitude = proto.longitude
+        this.poGoApi = poGoApi
 
-    private enum class EncounterKind {
+    }
+
+    constructor(poGoApi: PoGoApi, proto: FortDataOuterClass.FortData) {
+        this.spawnPointId = proto.lureInfo.fortId
+        this.encounterId = proto.lureInfo.encounterId
+        this.pokemonId = proto.lureInfo.activePokemonId
+        this.pokemonIdValue = proto.lureInfo.activePokemonIdValue
+        this.expirationTimestampMs = proto.lureInfo
+                .lureExpiresTimestampMs
+        this.latitude = proto.latitude
+        this.longitude = proto.longitude
+        this.encounterKind = EncounterKind.DISK
+        this.poGoApi = poGoApi
+    }
+
+
+    enum class EncounterKind {
         NORMAL,
         DISK
     }
 
-    override fun toString(): String{
+    override fun toString(): String {
         return "MapPokemon(encounterKind=$encounterKind, spawnPointId='$spawnPointId', encounterId=$encounterId, pokemonId=$pokemonId, pokemonIdValue=$pokemonIdValue, expirationTimestampMs=$expirationTimestampMs, latitude=$latitude, longitude=$longitude)"
     }
 

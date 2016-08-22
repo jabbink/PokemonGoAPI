@@ -45,13 +45,14 @@ class ActionQueue(val poGoApi: PoGoApi, val okHttpClient: OkHttpClient, val cred
                 }
                 var taken = 0
                 val queue = mutableListOf<Pair<ServerRequest, ReplaySubject<ServerRequest>>>()
+                val curTime = poGoApi.currentTimeMillis()
                 while (requestQueue.isNotEmpty() && taken++ < maxItems) {
                     val next = requestQueue.peek()
                     val type = next.first.getRequestType()
                     val lastUsed = lastUseds.getOrElse(type, { 0 })
                     val rateLimit = rateLimits.getOrElse(type, { 0 })
-                    if (poGoApi.currentTimeMillis() > lastUsed + rateLimit) {
-                        lastUseds.put(type, poGoApi.currentTimeMillis())
+                    if (curTime > lastUsed + rateLimit) {
+                        lastUseds.put(type, curTime)
                         queue.add(requestQueue.pop())
                     }
                 }

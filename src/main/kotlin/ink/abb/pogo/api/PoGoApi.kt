@@ -10,6 +10,7 @@ import POGOProtos.Settings.MapSettingsOuterClass
 import ink.abb.pogo.api.cache.Inventory
 import ink.abb.pogo.api.cache.Map
 import ink.abb.pogo.api.network.ServerRequest
+import rx.Observable
 
 interface PoGoApi {
     var latitude: Double
@@ -26,6 +27,8 @@ interface PoGoApi {
     fun handleResponse(serverRequest: ServerRequest)
 
     fun handleRequest(serverRequest: ServerRequest)
+
+    fun <T : ServerRequest> queueRequest(request: T): Observable<T>
 
     // caches
     var playerProfile: GetPlayerProfileResponseOuterClass.GetPlayerProfileResponse

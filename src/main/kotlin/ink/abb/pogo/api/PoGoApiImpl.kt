@@ -39,7 +39,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import kotlin.concurrent.fixedRateTimer
 
 class PoGoApiImpl(okHttpClient: OkHttpClient, val credentialProvider: CredentialProvider, val time: Time) : PoGoApi {
-    override var inventory: Inventory = Inventory()
+    override var inventory: Inventory = Inventory(this)
     override var map: Map = Map()
     lateinit override var playerData: PlayerDataOuterClass.PlayerData
     lateinit override var playerProfile: GetPlayerProfileResponseOuterClass.GetPlayerProfileResponse
@@ -68,7 +68,7 @@ class PoGoApiImpl(okHttpClient: OkHttpClient, val credentialProvider: Credential
 
     override var startTime = time.currentTimeMillis()
 
-    fun <T : ServerRequest> queueRequest(request: T): Observable<T> {
+    override fun <T : ServerRequest> queueRequest(request: T): Observable<T> {
         val replaySubject = ReplaySubject.create<T>()
         actionQueue.requestQueue.offer(Pair(request as ServerRequest, replaySubject as ReplaySubject<ServerRequest>))
         return replaySubject.asObservable()
@@ -138,26 +138,26 @@ class PoGoApiImpl(okHttpClient: OkHttpClient, val credentialProvider: Credential
                     this.inventory.currencies.getOrPut(it.name, { AtomicInteger(0) }).set(it.amount)
                 }
             }
-        /*RequestType.GET_PLAYER_PROFILE -> {
-            val response = serverRequest.response as GetPlayerProfileResponseOuterClass.GetPlayerProfileResponse
-            this.playerProfile = response
-        }*/
+            RequestType.GET_PLAYER_PROFILE -> {
+                val response = serverRequest.response as GetPlayerProfileResponseOuterClass.GetPlayerProfileResponse
+                this.playerProfile = response
+            }
             RequestType.GET_MAP_OBJECTS -> {
                 val response = serverRequest.response as GetMapObjectsResponseOuterClass.GetMapObjectsResponse
                 response.mapCellsList.forEach {
                     val gyms = it.fortsList.filter { it.type == FortType.GYM }.map {
-                        Gym(it)
+                        Gym(this, it)
                     }
                     val pokestops = it.fortsList.filter { it.type == FortType.CHECKPOINT }.map {
-                        Pokestop(it)
+                        Pokestop(this, it)
                     }
-                    val mapPokemon = pokestops.filter { it.fortData.hasLureInfo() }.map { MapPokemon(it.fortData, time) }
+                    val mapPokemon = pokestops.filter { it.fortData.hasLureInfo() }.map { MapPokemon(this, it.fortData) }
                             .union(
                                     it.catchablePokemonsList.map {
-                                        MapPokemon(it, time)
+                                        MapPokemon(this, it)
                                     })
                             .union(it.wildPokemonsList.map {
-                                MapPokemon(it, time)
+                                MapPokemon(this, it)
                             })
                     map.setGyms(it.s2CellId, gyms)
                     map.setPokestops(it.s2CellId, pokestops)
@@ -204,7 +204,7 @@ class PoGoApiImpl(okHttpClient: OkHttpClient, val credentialProvider: Credential
                     val meta = PokemonMetaRegistry.getMeta(response.evolvedPokemonData.pokemonId)
                     this.inventory.candies.getOrPut(meta.family, { AtomicInteger(0) }).addAndGet(response.candyAwarded - meta.candyToEvolve)
                     this.inventory.pokemon.remove(builder.pokemonId)
-                    this.inventory.pokemon.put(response.evolvedPokemonData.id, BagPokemon(response.evolvedPokemonData))
+                    this.inventory.pokemon.put(response.evolvedPokemonData.id, BagPokemon(this, response.evolvedPokemonData))
                 }
             }
             RequestType.FORT_SEARCH -> {
@@ -235,9 +235,18 @@ class PoGoApiImpl(okHttpClient: OkHttpClient, val credentialProvider: Credential
                     response.candyAwardedList.withIndex().forEach {
                         val pokemonId = response.getPokemonId(it.index)
                         val pokemon = this.inventory.pokemon[pokemonId]
+                        val egg = this.inventory.eggs[pokemonId]
                         if (pokemon != null) {
                             val meta = PokemonMetaRegistry.getMeta(pokemon.pokemonData.pokemonId)
                             this.inventory.candies.getOrPut(meta.family, { AtomicInteger(0) }).addAndGet(it.value)
+                        }
+                        if (egg != null) {
+                            this.inventory.eggs.remove(pokemonId)
+                            if (pokemon == null) {
+                                val meta = PokemonMetaRegistry.getMeta(egg.pokemonData.pokemonId)
+                                this.inventory.candies.getOrPut(meta.family, { AtomicInteger(0) }).addAndGet(it.value)
+                                this.inventory.pokemon.put(pokemonId, BagPokemon(this, egg.pokemonData))
+                            }
                         }
                     }
                     response.experienceAwardedList.forEach {
@@ -290,7 +299,7 @@ class PoGoApiImpl(okHttpClient: OkHttpClient, val credentialProvider: Credential
                     if (pokemon != null) {
                         val newPokemon = PokemonDataOuterClass.PokemonData.newBuilder(pokemon.pokemonData)
                         newPokemon.favorite = if (builder.isFavorite) 1 else 0
-                        this.inventory.pokemon.put(newPokemon.id, BagPokemon(newPokemon.build()))
+                        this.inventory.pokemon.put(newPokemon.id, BagPokemon(this, newPokemon.build()))
                     }
                 }
             }
@@ -298,6 +307,20 @@ class PoGoApiImpl(okHttpClient: OkHttpClient, val credentialProvider: Credential
                 val response = serverRequest.response as UpgradePokemonResponseOuterClass.UpgradePokemonResponse
                 if (response.result == UpgradePokemonResponseOuterClass.UpgradePokemonResponse.Result.SUCCESS) {
                     // TODO: Need inventory update...
+                }
+            }
+            RequestType.USE_ITEM_CAPTURE -> {
+                val response = serverRequest.response as UseItemCaptureResponseOuterClass.UseItemCaptureResponse
+                if (response.success) {
+                    val builder = serverRequest.getBuilder() as UseItemCaptureMessageOuterClass.UseItemCaptureMessageOrBuilder
+                    this.inventory.items.getOrPut(builder.itemId, { AtomicInteger(0) }).andDecrement
+                }
+            }
+            RequestType.USE_ITEM_XP_BOOST -> {
+                val response = serverRequest.response as UseItemXpBoostResponseOuterClass.UseItemXpBoostResponse
+                if (response.result == UseItemXpBoostResponseOuterClass.UseItemXpBoostResponse.Result.SUCCESS) {
+                    val builder = serverRequest.getBuilder() as UseItemXpBoostMessageOuterClass.UseItemXpBoostMessageOrBuilder
+                    this.inventory.items.getOrPut(builder.itemId, { AtomicInteger(0) }).andDecrement
                 }
             }
             else -> {
@@ -349,7 +372,7 @@ fun main(args: Array<String>) {
 
     //Thread.sleep(1000)
 
-    fixedRateTimer(name = "check map", daemon = true, initialDelay = 0L, period = 10000L, action= {
+    fixedRateTimer(name = "check map", daemon = true, initialDelay = 0L, period = 10000L, action = {
         println(api.map.getGyms(api.latitude, api.longitude))
         println(api.map.getPokestops(api.latitude, api.longitude))
         println(api.map.getPokemon(api.latitude, api.longitude))

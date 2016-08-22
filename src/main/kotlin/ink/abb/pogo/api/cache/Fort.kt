@@ -1,9 +1,10 @@
 package ink.abb.pogo.api.cache
 
 import POGOProtos.Map.Fort.FortDataOuterClass
+import ink.abb.pogo.api.PoGoApi
 import ink.abb.pogo.api.request.FortDetails
 
-abstract class Fort(val fortData: FortDataOuterClass.FortData) {
+abstract class Fort(val poGoApi: PoGoApi, val fortData: FortDataOuterClass.FortData) {
     val id = fortData.id
 
     var fetchedDetails = false
