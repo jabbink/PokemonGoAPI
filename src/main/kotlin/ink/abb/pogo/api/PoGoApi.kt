@@ -39,4 +39,10 @@ interface PoGoApi {
     var inventorySettings: InventorySettingsOuterClass.InventorySettings
     var levelSettings: LevelSettingsOuterClass.LevelSettings
     var mapSettings: MapSettingsOuterClass.MapSettings
+
+    fun setLocation(latitude: Double, longitude: Double, altitude: Double) {
+        this.latitude = latitude
+        this.longitude = longitude
+        this.altitude = altitude
+    }
 }
