@@ -78,7 +78,8 @@ class PoGoApiImpl(okHttpClient: OkHttpClient, val credentialProvider: Credential
     fun start() {
         credentialProvider.login()
         actionQueue.start()
-        val getPlayer = GetPlayer("0.33.1")
+        // TODO: correct?
+        val getPlayer = GetPlayer(GetPlayerMessageOuterClass.GetPlayerMessage.PlayerLocale.newBuilder().build())
         val settings = DownloadSettings()
         val inventory = GetInventory().withLastTimestampMs(0)
         val poGoApi = this

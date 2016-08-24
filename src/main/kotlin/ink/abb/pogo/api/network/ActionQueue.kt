@@ -87,7 +87,6 @@ class ActionQueue(val poGoApi: PoGoApi, val okHttpClient: OkHttpClient, val cred
                     .build()
         })
         envelope.setStatusCode(2)
-                .setUnknown12(989)
 
         envelope.setRequestId(requestId++);
 

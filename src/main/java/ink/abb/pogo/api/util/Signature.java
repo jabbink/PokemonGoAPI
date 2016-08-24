@@ -59,6 +59,8 @@ public class Signature {
                         .setProviderStatus(3)
                         .setLocationType(1);
 
+        builder.setMsSinceLastLocationfix(locationFix.getTimestampSnapshot());
+
         sigBuilder.addLocationFix(locationFix.build());
 
         /*SignatureOuterClass.Signature.ActivityStatus.Builder activityStatus = SignatureOuterClass.Signature.ActivityStatus.newBuilder()
@@ -70,7 +72,14 @@ public class Signature {
 
         sigBuilder.setActivityStatus(activityStatus.build());*/
 
-        sigBuilder.setUnknown25(-8537042734809897855L);
+        /**
+         * TODO:
+         * 0.33.0 = 2016080700
+         * 0.35.0 = 2016082200
+         *  xxHash64(sha1(value_from_above).ToByteArray(), 0x88533787)
+         */
+
+        sigBuilder.setVersionCodeHash(-8537042734809897855L);
 
         /*SignatureOuterClass.Signature.SensorInfo.Builder sensorInfo = SignatureOuterClass.Signature.SensorInfo.newBuilder()
                 .setTimestampSnapshot(Math.max(timestampSinceStart - (long) (Math.random() * 300), 0));*/
@@ -90,7 +99,7 @@ public class Signature {
         Unknown6OuterClass.Unknown6 uk6 = Unknown6OuterClass.Unknown6.newBuilder()
                 .setRequestType(6)
                 .setUnknown2(Unknown2.newBuilder().setEncryptedSignature(ByteString.copyFrom(encrypted))).build();
-        builder.setUnknown6(uk6);
+        builder.addUnknown6(uk6);
     }
 
     private static byte[] getBytes(double input) {
