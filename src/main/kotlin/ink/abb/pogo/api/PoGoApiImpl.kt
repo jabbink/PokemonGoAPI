@@ -324,6 +324,13 @@ class PoGoApiImpl(okHttpClient: OkHttpClient, val credentialProvider: Credential
                     this.inventory.items.getOrPut(builder.itemId, { AtomicInteger(0) }).andDecrement
                 }
             }
+            RequestType.USE_INCENSE -> {
+                val response = serverRequest.response as UseIncenseResponseOuterClass.UseIncenseResponse
+                if (response.result == UseIncenseResponseOuterClass.UseIncenseResponse.Result.SUCCESS) {
+                    val item = response.appliedIncense.itemId
+                    this.inventory.items.getOrPut(item, { AtomicInteger(0) }).andDecrement
+                }
+            }
             else -> {
                 // Don't cache
             }
