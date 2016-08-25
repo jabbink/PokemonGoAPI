@@ -69,16 +69,17 @@ class ActionQueue(val poGoApi: PoGoApi, val okHttpClient: OkHttpClient, val cred
     var apiEndpoint = "https://pgorelease.nianticlabs.com/plfe/rpc"
     var authTicket: AuthTicketOuterClass.AuthTicket? = null
 
-    private var requestId: Long = Random().nextLong()
+    private var requestId: Long = 0
+    private val random = Random()
 
     private fun sendRequests(requests: List<Pair<ServerRequest, ReplaySubject<ServerRequest>>>) {
         val envelope = RequestEnvelopeOuterClass.RequestEnvelope.newBuilder()
         envelope.setAltitude(poGoApi.altitude).setLatitude(poGoApi.latitude).setLongitude(poGoApi.longitude)
         // TODO Set ticket when we have a valid one
         if (authTicket != null && authTicket?.expireTimestampMs ?: 0 > poGoApi.currentTimeMillis() - CredentialProvider.REFRESH_TOKEN_BUFFER_TIME) {
-            envelope.setAuthTicket(authTicket)
+            envelope.authTicket = authTicket
         } else {
-            envelope.setAuthInfo(credentialProvider.authInfo)
+            envelope.authInfo = credentialProvider.authInfo
         }
         envelope.addAllRequests(requests.map {
             RequestOuterClass.Request.newBuilder()
@@ -88,7 +89,10 @@ class ActionQueue(val poGoApi: PoGoApi, val okHttpClient: OkHttpClient, val cred
         })
         envelope.setStatusCode(2)
 
-        envelope.setRequestId(requestId++);
+        requestId++
+        val rand = random.nextLong() or requestId.ushr(31)
+
+        envelope.requestId = rand shl 32 or requestId;
 
         Signature.setSignature(poGoApi, envelope)
 

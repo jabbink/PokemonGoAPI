@@ -19,7 +19,7 @@ public class Signature {
     /**
      * Given a fully built request, set the signature correctly.
      *
-     * @param poGoApi     the api
+     * @param poGoApi the api
      * @param builder the requestenvelop builder
      */
     public static void setSignature(PoGoApi poGoApi, RequestEnvelopeOuterClass.RequestEnvelope.Builder builder) {
@@ -81,8 +81,28 @@ public class Signature {
 
         sigBuilder.setVersionCodeHash(-8537042734809897855L);
 
-        /*SignatureOuterClass.Signature.SensorInfo.Builder sensorInfo = SignatureOuterClass.Signature.SensorInfo.newBuilder()
-                .setTimestampSnapshot(Math.max(timestampSinceStart - (long) (Math.random() * 300), 0));*/
+        Random sRandom = new Random();
+
+        SignatureOuterClass.Signature.SensorInfo.Builder sensorInfo = SignatureOuterClass.Signature.SensorInfo.newBuilder()
+                .setTimestampSnapshot(Math.max(timestampSinceStart - (long) (Math.random() * 300), 0))
+                .setMagnetometerX(-0.7 + sRandom.nextDouble() * 1.4)
+                .setMagnetometerY(-0.7 + sRandom.nextDouble() * 1.4)
+                .setMagnetometerZ(-0.7 + sRandom.nextDouble() * 1.4)
+                .setAngleNormalizedX(-55.0 + sRandom.nextDouble() * 110.0)
+                .setAngleNormalizedY(-55.0 + sRandom.nextDouble() * 110.0)
+                .setAngleNormalizedZ(-55.0 + sRandom.nextDouble() * 110.0)
+                .setAccelRawX(0.1 + (0.7 - 0.1) * sRandom.nextDouble())
+                .setAccelRawY(0.1 + (0.8 - 0.1) * sRandom.nextDouble())
+                .setAccelRawZ(0.1 + (0.8 - 0.1) * sRandom.nextDouble())
+                .setGyroscopeRawX(-1.0 + sRandom.nextDouble() * 2.0)
+                .setGyroscopeRawY(-1.0 + sRandom.nextDouble() * 2.0)
+                .setGyroscopeRawZ(-1.0 + sRandom.nextDouble() * 2.0)
+                .setAccelNormalizedX(-1.0 + sRandom.nextDouble() * 2.0)
+                .setAccelNormalizedY(6.0 + (9.0 - 6.0) * sRandom.nextDouble())
+                .setAccelNormalizedZ(-1.0 + (8.0 - (-1.0)) * sRandom.nextDouble())
+                .setAccelerometerAxes(3);
+
+        sigBuilder.setSensorInfo(sensorInfo);
 
 
         if (authTicketBA != null) {
@@ -124,9 +144,9 @@ public class Signature {
         xx32.update(authTicket, 0, authTicket.length);
         byte[] bytes = new byte[8 * 3];
 
-        System.arraycopy(getBytes(api.getLatitude()), 0, bytes, 0, 8);
-        System.arraycopy(getBytes(api.getLongitude()), 0, bytes, 8, 8);
-        System.arraycopy(getBytes(api.getAltitude()), 0, bytes, 16, 8);
+        System.arraycopy(getBytes(builder.getLatitude()), 0, bytes, 0, 8);
+        System.arraycopy(getBytes(builder.getLongitude()), 0, bytes, 8, 8);
+        System.arraycopy(getBytes(builder.getAltitude()), 0, bytes, 16, 8);
 
         xx32 = factory.newStreamingHash32(xx32.getValue());
         xx32.update(bytes, 0, bytes.length);
@@ -137,9 +157,9 @@ public class Signature {
         XXHashFactory factory = XXHashFactory.fastestInstance();
         byte[] bytes = new byte[8 * 3];
 
-        System.arraycopy(getBytes(api.getLatitude()), 0, bytes, 0, 8);
-        System.arraycopy(getBytes(api.getLongitude()), 0, bytes, 8, 8);
-        System.arraycopy(getBytes(api.getAltitude()), 0, bytes, 16, 8);
+        System.arraycopy(getBytes(builder.getLatitude()), 0, bytes, 0, 8);
+        System.arraycopy(getBytes(builder.getLongitude()), 0, bytes, 8, 8);
+        System.arraycopy(getBytes(builder.getAltitude()), 0, bytes, 16, 8);
 
         StreamingXXHash32 xx32 = factory.newStreamingHash32(0x1B845238);
         xx32.update(bytes, 0, bytes.length);
