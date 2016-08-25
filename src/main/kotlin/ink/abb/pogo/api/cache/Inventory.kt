@@ -19,7 +19,7 @@ class Inventory(val poGoApi: PoGoApi) {
     var appliedItems = mutableListOf<AppliedItemOuterClass.AppliedItem>()
     var candies = mutableMapOf<PokemonFamilyId, AtomicInteger>()
 
-    var eggIncubators = mutableListOf<EggIncubator>()
+    var eggIncubators = mutableMapOf<String, EggIncubator>()
 
     var maxSize = AtomicInteger(350)
 
@@ -47,6 +47,7 @@ class Inventory(val poGoApi: PoGoApi) {
         val items: MutableMap<ItemId, AtomicInteger>
         val pokemon: MutableMap<Long, BagPokemon>
         val eggs: MutableMap<Long, BagPokemon>
+        val eggIncubators: MutableMap<String, EggIncubator>
         val candies: MutableMap<PokemonFamilyId, AtomicInteger>
 
         val maxSize: AtomicInteger
@@ -59,6 +60,7 @@ class Inventory(val poGoApi: PoGoApi) {
             items = mutableMapOf<ItemId, AtomicInteger>()
             pokemon = mutableMapOf<Long, BagPokemon>()
             eggs = mutableMapOf<Long, BagPokemon>()
+            eggIncubators = mutableMapOf()
             candies = mutableMapOf<PokemonFamilyId, AtomicInteger>()
 
             maxSize = AtomicInteger(350)
@@ -74,6 +76,7 @@ class Inventory(val poGoApi: PoGoApi) {
             maxSize = this.maxSize
             gems = this.gems
             pokedex = this.pokedex
+            eggIncubators = this.eggIncubators
         }
         inventoryDelta.inventoryItemsList.forEach {
             val itemData = it.inventoryItemData
@@ -84,7 +87,7 @@ class Inventory(val poGoApi: PoGoApi) {
                 candies.getOrPut(itemData.candy.familyId, { AtomicInteger(0) }).set(itemData.candy.candy)
             }
             if (itemData.hasEggIncubators()) {
-                this.eggIncubators = itemData.eggIncubators.eggIncubatorList
+                itemData.eggIncubators.eggIncubatorList.forEach { eggIncubators.put(it.id, it) }
             }
             if (itemData.hasInventoryUpgrades()) {
                 var total = 350
@@ -118,6 +121,7 @@ class Inventory(val poGoApi: PoGoApi) {
             this.items = items
             this.pokemon = pokemon
             this.eggs = eggs
+            this.eggIncubators = eggIncubators
             this.candies = candies
             this.pokedex = pokedex
         }

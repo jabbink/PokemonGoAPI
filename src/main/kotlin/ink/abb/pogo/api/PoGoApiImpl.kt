@@ -5,6 +5,7 @@ import POGOProtos.Data.PlayerDataOuterClass
 import POGOProtos.Data.PokemonDataOuterClass
 import POGOProtos.Enums.PokemonIdOuterClass
 import POGOProtos.Enums.TutorialStateOuterClass
+import POGOProtos.Inventory.EggIncubatorOuterClass
 import POGOProtos.Map.Fort.FortTypeOuterClass.FortType
 import POGOProtos.Networking.Envelopes.SignatureOuterClass
 import POGOProtos.Networking.Requests.Messages.*
@@ -329,6 +330,22 @@ class PoGoApiImpl(okHttpClient: OkHttpClient, val credentialProvider: Credential
                 if (response.result == UseIncenseResponseOuterClass.UseIncenseResponse.Result.SUCCESS) {
                     val item = response.appliedIncense.itemId
                     this.inventory.items.getOrPut(item, { AtomicInteger(0) }).andDecrement
+                }
+            }
+            RequestType.USE_ITEM_EGG_INCUBATOR -> {
+                val response = serverRequest.response as UseItemEggIncubatorResponseOuterClass.UseItemEggIncubatorResponse
+                if (response.result == UseItemEggIncubatorResponseOuterClass.UseItemEggIncubatorResponse.Result.SUCCESS) {
+                    val builder = serverRequest.getBuilder() as UseItemEggIncubatorMessageOuterClass.UseItemEggIncubatorMessageOrBuilder
+                    val egg = this.inventory.eggs.get(builder.pokemonId)
+                    val incubator = this.inventory.eggIncubators.get(builder.itemId)
+                    if (egg != null && incubator != null) {
+                        val newEgg = PokemonDataOuterClass.PokemonData.newBuilder(egg.pokemonData)
+                        newEgg.eggIncubatorId = incubator.id
+                        val newIncubator = EggIncubatorOuterClass.EggIncubator.newBuilder(incubator)
+                        newIncubator.pokemonId = newEgg.id
+                        this.inventory.eggs.put(egg.pokemonData.id, BagPokemon(this, newEgg.build()))
+                        this.inventory.eggIncubators.put(incubator.id, newIncubator.build())
+                    }
                 }
             }
             else -> {

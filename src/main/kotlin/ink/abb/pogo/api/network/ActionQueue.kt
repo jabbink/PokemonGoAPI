@@ -143,6 +143,9 @@ class ActionQueue(val poGoApi: PoGoApi, val okHttpClient: OkHttpClient, val cred
                  * ie first response = first request and send back to the requests to toBlocking.
                  */
                 var count = 0
+                if (responseEnvelope.returnsCount != requests.size) {
+                    System.err.println("Inconsistent replies received; requested "+ requests.size +" payloads; received "+ responseEnvelope.returnsCount);
+                }
                 for (payload in responseEnvelope.returnsList) {
                     val serverReq = requests[count]
                     /**
@@ -153,6 +156,7 @@ class ActionQueue(val poGoApi: PoGoApi, val okHttpClient: OkHttpClient, val cred
                         poGoApi.handleResponse(serverReq.first)
                         try {
                             serverReq.second.onNext(serverReq.first)
+                            serverReq.second.onCompleted()
                         } catch (e: Exception) {
                             System.err.println("Error in handler")
                             e.printStackTrace()
