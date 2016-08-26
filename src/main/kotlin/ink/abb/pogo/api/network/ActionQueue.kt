@@ -149,8 +149,9 @@ class ActionQueue(val poGoApi: PoGoApi, val okHttpClient: OkHttpClient, val cred
                  * ie first response = first request and send back to the requests to toBlocking.
                  */
                 var count = 0
-                if (responseEnvelope.returnsCount - 1 != requests.size) {
-                    System.err.println("Inconsistent replies received; requested "+ requests.size +" payloads; received "+ (responseEnvelope.returnsCount - 1));
+                if (responseEnvelope.returnsCount != requests.size + 1) {
+                    System.err.println("Inconsistent replies received; expected "+ requests.size + 1 +" payloads; received "+ responseEnvelope.returnsCount);
+                    return sendRequests(requests)
                 }
                 for (payload in responseEnvelope.returnsList) {
                     if (count < requests.size) {
