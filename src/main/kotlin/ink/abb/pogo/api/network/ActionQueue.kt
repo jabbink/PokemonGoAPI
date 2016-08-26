@@ -158,7 +158,7 @@ class ActionQueue(val poGoApi: PoGoApi, val okHttpClient: OkHttpClient, val cred
                     } else {
                         System.err.println(requests[responseEnvelope.returnsCount].first.getRequestType())
                         System.err.println(requests[responseEnvelope.returnsCount].first.build(poGoApi).toString())
-                        requests.drop(responseEnvelope.returnsCount).forEach { poGoApi.queueRequest(it.first) }
+                        requests.drop(responseEnvelope.returnsCount).dropLast(1).forEach { poGoApi.queueRequest(it.first).subscribe(it.second) }
                     }
                 }
                 for (payload in responseEnvelope.returnsList) {

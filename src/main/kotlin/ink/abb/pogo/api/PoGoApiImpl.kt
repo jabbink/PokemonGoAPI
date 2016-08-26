@@ -213,7 +213,7 @@ class PoGoApiImpl(okHttpClient: OkHttpClient, val credentialProvider: Credential
                 val cellId = S2CellId.fromLatLng(S2LatLng.fromDegrees(response.latitude, response.longitude)).parent(15).id()
                 val mapCell = map.getMapCell(cellId)
                 val fort = mapCell.pokestops.find { it.id == response.fortId } ?: mapCell.gyms.find { it.id == response.fortId }
-                if (fort != null) {
+                if (fort != null && response.name.isNotBlank()) {
                     fort.fetchedDetails = true
                     fort._name = response.name
                     fort._description = response.description
