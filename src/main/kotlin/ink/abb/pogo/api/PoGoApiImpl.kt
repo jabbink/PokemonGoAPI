@@ -56,7 +56,7 @@ class PoGoApiImpl(okHttpClient: OkHttpClient, val credentialProvider: Credential
 
     override var latitude: Double = 0.0
     override var longitude: Double = 0.0
-    override var altitude: Double = 0.0
+    private var horizontalAccuracy: Double = 0.0
     override val sessionHash = ByteArray(16)
     override val deviceInfo: SignatureOuterClass.Signature.DeviceInfo
 
@@ -425,7 +425,6 @@ fun main(args: Array<String>) {
 
     api.latitude = 52.0
     api.longitude = 4.4
-    api.altitude = -2.5
 
     api.start()
 

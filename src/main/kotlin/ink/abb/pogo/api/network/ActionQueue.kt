@@ -74,7 +74,7 @@ class ActionQueue(val poGoApi: PoGoApi, val okHttpClient: OkHttpClient, val cred
 
     private fun sendRequests(requests: List<Pair<ServerRequest, ReplaySubject<ServerRequest>>>) {
         val envelope = RequestEnvelopeOuterClass.RequestEnvelope.newBuilder()
-        envelope.setAltitude(poGoApi.altitude).setLatitude(poGoApi.latitude).setLongitude(poGoApi.longitude)
+        envelope.setAccuracy(Math.random() * 6.0 + 4.0).setLatitude(poGoApi.latitude).setLongitude(poGoApi.longitude)
         // TODO Set ticket when we have a valid one
         if (authTicket != null && authTicket?.expireTimestampMs ?: 0 > poGoApi.currentTimeMillis() - CredentialProvider.REFRESH_TOKEN_BUFFER_TIME) {
             envelope.authTicket = authTicket
@@ -87,7 +87,7 @@ class ActionQueue(val poGoApi: PoGoApi, val okHttpClient: OkHttpClient, val cred
                     .setRequestType(it.first.getRequestType())
                     .build()
         })
-        envelope.setStatusCode(2)
+        envelope.statusCode = 2
 
         requestId++
         val rand = random.nextLong() or requestId.ushr(31)

@@ -55,7 +55,7 @@ public class Signature {
                         .setLatitude((float) poGoApi.getLatitude())
                         .setLongitude((float) poGoApi.getLongitude())
                         .setHorizontalAccuracy((float) (Math.random() * 2.0 - 1.0))
-                        .setVerticalAccuracy((float) (Math.random() * 2.0 + 10.0))
+                        .setVerticalAccuracy((float) builder.getAccuracy())
                         .setProviderStatus(3)
                         .setLocationType(1);
 
@@ -79,7 +79,7 @@ public class Signature {
          *  xxHash64(sha1(value_from_above).ToByteArray(), 0x88533787)
          */
 
-        sigBuilder.setVersionCodeHash(-8537042734809897855L);
+        sigBuilder.setUnknown25(-8537042734809897855L);
 
         Random sRandom = new Random();
 
@@ -146,7 +146,7 @@ public class Signature {
 
         System.arraycopy(getBytes(builder.getLatitude()), 0, bytes, 0, 8);
         System.arraycopy(getBytes(builder.getLongitude()), 0, bytes, 8, 8);
-        System.arraycopy(getBytes(builder.getAltitude()), 0, bytes, 16, 8);
+        System.arraycopy(getBytes(builder.getAccuracy()), 0, bytes, 16, 8);
 
         xx32 = factory.newStreamingHash32(xx32.getValue());
         xx32.update(bytes, 0, bytes.length);
@@ -159,7 +159,7 @@ public class Signature {
 
         System.arraycopy(getBytes(builder.getLatitude()), 0, bytes, 0, 8);
         System.arraycopy(getBytes(builder.getLongitude()), 0, bytes, 8, 8);
-        System.arraycopy(getBytes(builder.getAltitude()), 0, bytes, 16, 8);
+        System.arraycopy(getBytes(builder.getAccuracy()), 0, bytes, 16, 8);
 
         StreamingXXHash32 xx32 = factory.newStreamingHash32(0x1B845238);
         xx32.update(bytes, 0, bytes.length);

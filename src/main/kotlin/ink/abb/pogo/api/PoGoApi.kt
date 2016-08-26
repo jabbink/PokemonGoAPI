@@ -15,7 +15,7 @@ import rx.Observable
 interface PoGoApi {
     var latitude: Double
     var longitude: Double
-    var altitude: Double
+
     val startTime: Long
 
     val deviceInfo: SignatureOuterClass.Signature.DeviceInfo
@@ -40,9 +40,8 @@ interface PoGoApi {
     var levelSettings: LevelSettingsOuterClass.LevelSettings
     var mapSettings: MapSettingsOuterClass.MapSettings
 
-    fun setLocation(latitude: Double, longitude: Double, altitude: Double) {
+    fun setLocation(latitude: Double, longitude: Double) {
         this.latitude = latitude
         this.longitude = longitude
-        this.altitude = altitude
     }
 }
