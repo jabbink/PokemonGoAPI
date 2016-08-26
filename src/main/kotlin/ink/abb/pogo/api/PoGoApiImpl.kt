@@ -1,6 +1,5 @@
 package ink.abb.pogo.api
 
-import POGOProtos.Data.Player.PlayerAvatarOuterClass
 import POGOProtos.Data.PlayerDataOuterClass
 import POGOProtos.Data.PokemonDataOuterClass
 import POGOProtos.Enums.PokemonIdOuterClass
@@ -27,7 +26,6 @@ import ink.abb.pogo.api.map.GetMapObjects
 import ink.abb.pogo.api.network.ActionQueue
 import ink.abb.pogo.api.network.ServerRequest
 import ink.abb.pogo.api.request.*
-import ink.abb.pogo.api.request.CheckChallenge
 import ink.abb.pogo.api.util.DeviceInfoGenerator
 import ink.abb.pogo.api.util.PokemonMetaRegistry
 import ink.abb.pogo.api.util.SystemTimeImpl
@@ -50,6 +48,10 @@ class PoGoApiImpl(okHttpClient: OkHttpClient, val credentialProvider: Credential
     lateinit override var inventorySettings: InventorySettingsOuterClass.InventorySettings
     lateinit override var levelSettings: LevelSettingsOuterClass.LevelSettings
     lateinit override var mapSettings: MapSettingsOuterClass.MapSettings
+
+    private var _initialized = false
+    override val initialized: Boolean
+        get() = _initialized
 
     override fun currentTimeMillis(): Long {
         return time.currentTimeMillis()
@@ -86,14 +88,6 @@ class PoGoApiImpl(okHttpClient: OkHttpClient, val credentialProvider: Credential
         val inventory = GetInventory().withLastTimestampMs(0)
         val poGoApi = this
         queueRequest(getPlayer)
-        queueRequest(CheckChallenge().withDebugRequest(false)).subscribe {
-            val result = it.response
-            if (result.showChallenge) {
-                System.err.println("Received challenge request!")
-                System.err.println(result.challengeUrl)
-                System.exit(1)
-            }
-        }
         queueRequest(settings).subscribe {
             val minRefresh = it.response.settings.mapSettings.getMapObjectsMinRefreshSeconds
             val maxRefresh = it.response.settings.mapSettings.getMapObjectsMaxRefreshSeconds
@@ -102,7 +96,9 @@ class PoGoApiImpl(okHttpClient: OkHttpClient, val credentialProvider: Credential
                 queueRequest(GetMapObjects(poGoApi))
             })
         }
-        queueRequest(inventory)
+        queueRequest(inventory).subscribe {
+            _initialized = true
+        }
     }
 
     override fun handleRequest(serverRequest: ServerRequest) {
@@ -151,7 +147,7 @@ class PoGoApiImpl(okHttpClient: OkHttpClient, val credentialProvider: Credential
                 if (!playerData.tutorialStateList.contains(TutorialStateOuterClass.TutorialState.FIRST_TIME_EXPERIENCE_COMPLETE)) {
                     tut.withTutorialsCompleted(TutorialStateOuterClass.TutorialState.FIRST_TIME_EXPERIENCE_COMPLETE)
                 }
-                if (this.inventory.playerStats.level >= 5 && !playerData.tutorialStateList.contains(TutorialStateOuterClass.TutorialState.GYM_TUTORIAL)) {
+                if (initialized && this.inventory.playerStats.level >= 5 && !playerData.tutorialStateList.contains(TutorialStateOuterClass.TutorialState.GYM_TUTORIAL)) {
                     tut.withTutorialsCompleted(TutorialStateOuterClass.TutorialState.GYM_TUTORIAL)
                 }
                 /*if (playerData.tutorialStateCount == 0) {
@@ -389,6 +385,14 @@ class PoGoApiImpl(okHttpClient: OkHttpClient, val credentialProvider: Credential
                         this.inventory.eggs.put(egg.pokemonData.id, BagPokemon(this, newEgg.build()))
                         this.inventory.eggIncubators.put(incubator.id, newIncubator.build())
                     }
+                }
+            }
+            RequestType.CHECK_CHALLENGE -> {
+                val response = serverRequest.response as CheckChallengeResponseOuterClass.CheckChallengeResponse
+                if (response.showChallenge) {
+                    System.err.println("Received challenge request!")
+                    System.err.println(response.challengeUrl)
+                    System.exit(1)
                 }
             }
             else -> {

@@ -40,6 +40,8 @@ interface PoGoApi {
     var levelSettings: LevelSettingsOuterClass.LevelSettings
     var mapSettings: MapSettingsOuterClass.MapSettings
 
+    val initialized: Boolean
+
     fun setLocation(latitude: Double, longitude: Double) {
         this.latitude = latitude
         this.longitude = longitude

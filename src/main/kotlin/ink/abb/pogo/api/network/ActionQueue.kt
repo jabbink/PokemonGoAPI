@@ -10,6 +10,7 @@ import ink.abb.pogo.api.PoGoApi
 import ink.abb.pogo.api.auth.CredentialProvider
 import ink.abb.pogo.api.exceptions.LoginFailedException
 import ink.abb.pogo.api.exceptions.RemoteServerException
+import ink.abb.pogo.api.request.CheckChallenge
 import ink.abb.pogo.api.util.Signature
 import okhttp3.OkHttpClient
 import okhttp3.RequestBody
@@ -87,6 +88,11 @@ class ActionQueue(val poGoApi: PoGoApi, val okHttpClient: OkHttpClient, val cred
                     .setRequestType(it.first.getRequestType())
                     .build()
         })
+        val challenge = CheckChallenge().withDebugRequest(false)
+        envelope.addRequests(RequestOuterClass.Request.newBuilder()
+                .setRequestMessage(challenge.build(poGoApi).toByteString())
+                .setRequestType(challenge.getRequestType())
+                .build())
         envelope.statusCode = 2
 
         requestId++
@@ -143,26 +149,28 @@ class ActionQueue(val poGoApi: PoGoApi, val okHttpClient: OkHttpClient, val cred
                  * ie first response = first request and send back to the requests to toBlocking.
                  */
                 var count = 0
-                if (responseEnvelope.returnsCount != requests.size) {
-                    System.err.println("Inconsistent replies received; requested "+ requests.size +" payloads; received "+ responseEnvelope.returnsCount);
+                if (responseEnvelope.returnsCount - 1 != requests.size) {
+                    System.err.println("Inconsistent replies received; requested "+ requests.size +" payloads; received "+ (responseEnvelope.returnsCount - 1));
                 }
                 for (payload in responseEnvelope.returnsList) {
-                    val serverReq = requests[count]
-                    /**
-                     * TODO: Probably all other payloads are garbage as well in this case,
-                     * so might as well throw an exception and leave this loop  */
-                    if (payload != null) {
-                        serverReq.first.setResponse(payload)
-                        poGoApi.handleResponse(serverReq.first)
-                        try {
-                            serverReq.second.onNext(serverReq.first)
-                            serverReq.second.onCompleted()
-                        } catch (e: Exception) {
-                            System.err.println("Error in handler")
-                            e.printStackTrace()
+                    if (count < requests.size) {
+                        val serverReq = requests[count]
+                        /**
+                         * TODO: Probably all other payloads are garbage as well in this case,
+                         * so might as well throw an exception and leave this loop  */
+                        if (payload != null) {
+                            serverReq.first.setResponse(payload)
+                            poGoApi.handleResponse(serverReq.first)
+                            try {
+                                serverReq.second.onNext(serverReq.first)
+                                serverReq.second.onCompleted()
+                            } catch (e: Exception) {
+                                System.err.println("Error in handler")
+                                e.printStackTrace()
+                            }
                         }
+                        count++
                     }
-                    count++
                 }
             })
         } catch (e: IOException) {
