@@ -160,6 +160,7 @@ class ActionQueue(val poGoApi: PoGoApi, val okHttpClient: OkHttpClient, val cred
                     } else {
                         System.err.println(requests[responseEnvelope.returnsCount].first.getRequestType())
                         System.err.println(requests[responseEnvelope.returnsCount].first.build(poGoApi).toString())
+                        System.err.println("Envelope location: "+ envelope.latitude +" "+ envelope.longitude)
                         requests.drop(responseEnvelope.returnsCount).dropLast(1).forEach {
                             val original = it.second
                             // no idea if .subscribe(original) would work here automatically as wel
