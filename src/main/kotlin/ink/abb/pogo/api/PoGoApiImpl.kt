@@ -27,6 +27,7 @@ import ink.abb.pogo.api.map.GetMapObjects
 import ink.abb.pogo.api.network.ActionQueue
 import ink.abb.pogo.api.network.ServerRequest
 import ink.abb.pogo.api.request.*
+import ink.abb.pogo.api.request.CheckChallenge
 import ink.abb.pogo.api.util.DeviceInfoGenerator
 import ink.abb.pogo.api.util.PokemonMetaRegistry
 import ink.abb.pogo.api.util.SystemTimeImpl
@@ -85,6 +86,14 @@ class PoGoApiImpl(okHttpClient: OkHttpClient, val credentialProvider: Credential
         val inventory = GetInventory().withLastTimestampMs(0)
         val poGoApi = this
         queueRequest(getPlayer)
+        queueRequest(CheckChallenge().withDebugRequest(false)).subscribe {
+            val result = it.response
+            if (result.showChallenge) {
+                System.err.println("Received challenge request!")
+                System.err.println(result.challengeUrl)
+                System.exit(1)
+            }
+        }
         queueRequest(settings).subscribe {
             val minRefresh = it.response.settings.mapSettings.getMapObjectsMinRefreshSeconds
             val maxRefresh = it.response.settings.mapSettings.getMapObjectsMaxRefreshSeconds

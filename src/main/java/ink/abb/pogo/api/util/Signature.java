@@ -27,7 +27,7 @@ public class Signature {
         long timestampSinceStart = curTime - poGoApi.getStartTime();
 
         SignatureOuterClass.Signature.Builder sigBuilder = SignatureOuterClass.Signature.newBuilder()
-                .setLocationHash2(getLocationHash2(poGoApi, builder))
+                .setLocationHash2(getLocationHash2(builder))
                 .setSessionHash(ByteString.copyFrom(poGoApi.getSessionHash()))
                 .setTimestamp(poGoApi.currentTimeMillis())
                 .setTimestampSinceStart(timestampSinceStart);
@@ -39,7 +39,7 @@ public class Signature {
         }
 
         if (authTicketBA != null) {
-            sigBuilder.setLocationHash1(getLocationHash1(poGoApi, authTicketBA, builder));
+            sigBuilder.setLocationHash1(getLocationHash1(authTicketBA, builder));
         }
 
 
@@ -137,7 +137,7 @@ public class Signature {
     }
 
 
-    private static int getLocationHash1(PoGoApi api, byte[] authTicket,
+    private static int getLocationHash1(byte[] authTicket,
                                         RequestEnvelopeOuterClass.RequestEnvelope.Builder builder) {
         XXHashFactory factory = XXHashFactory.fastestInstance();
         StreamingXXHash32 xx32 = factory.newStreamingHash32(0x1B845238);
@@ -153,7 +153,7 @@ public class Signature {
         return xx32.getValue();
     }
 
-    private static int getLocationHash2(PoGoApi api, RequestEnvelopeOuterClass.RequestEnvelope.Builder builder) {
+    private static int getLocationHash2(RequestEnvelopeOuterClass.RequestEnvelope.Builder builder) {
         XXHashFactory factory = XXHashFactory.fastestInstance();
         byte[] bytes = new byte[8 * 3];
 
