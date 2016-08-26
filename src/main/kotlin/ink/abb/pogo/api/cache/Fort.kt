@@ -9,20 +9,17 @@ abstract class Fort(val poGoApi: PoGoApi, val fortData: FortDataOuterClass.FortD
 
     var fetchedDetails = false
 
-    var _name = ""
+    var _name: String = ""
     val name: String
         get() {
-            if (!fetchedDetails) {
-                poGoApi.queueRequest(getFortDetails()).toBlocking()
-            }
+            fetchDetails()
             return _name
         }
-    var _description = ""
+
+    var _description: String = ""
     val description: String
         get() {
-            if (!fetchedDetails) {
-                poGoApi.queueRequest(getFortDetails()).toBlocking()
-            }
+            fetchDetails()
             return _description
         }
 
@@ -34,7 +31,26 @@ abstract class Fort(val poGoApi: PoGoApi, val fortData: FortDataOuterClass.FortD
         return FortDetails().withFortId(id).withLatitude(fortData.latitude).withLongitude(fortData.longitude)
     }
 
-    override fun toString(): String{
+    fun fetchDetails() {
+        if (fetchedDetails) {
+            return
+        }
+        synchronized(fetchedDetails) {
+            // maybe fetched in the meantime
+            if (fetchedDetails) {
+                return
+            }
+            val reply = poGoApi.queueRequest(getFortDetails()).toBlocking().first().response
+            if (_name != reply.name || _name == "") {
+                System.err.println("Failed to fetch name of $id")
+                fetchedDetails = false
+            } else {
+                fetchedDetails = true
+            }
+        }
+    }
+
+    override fun toString(): String {
         return "Fort(fortData=$fortData, id='$id', fetchedDetails=$fetchedDetails, name='$name', description=$description)"
     }
 }

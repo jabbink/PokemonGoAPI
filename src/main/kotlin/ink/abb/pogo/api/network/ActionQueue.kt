@@ -151,14 +151,19 @@ class ActionQueue(val poGoApi: PoGoApi, val okHttpClient: OkHttpClient, val cred
                  */
                 var count = 0
                 if (responseEnvelope.returnsCount != requests.size + 1) {
-                    System.err.println("Inconsistent replies received; expected "+ requests.size + 1 +" payloads; received "+ responseEnvelope.returnsCount);
+                    System.err.println("Inconsistent replies received; expected " + (requests.size + 1) + " payloads; received " + responseEnvelope.returnsCount);
                     System.err.println("Probable culprit:")
                     if (responseEnvelope.returnsCount == requests.size) {
                         System.err.println("Captcha request - ignoring")
                     } else {
                         System.err.println(requests[responseEnvelope.returnsCount].first.getRequestType())
                         System.err.println(requests[responseEnvelope.returnsCount].first.build(poGoApi).toString())
-                        requests.drop(responseEnvelope.returnsCount).dropLast(1).forEach { poGoApi.queueRequest(it.first).subscribe(it.second) }
+                        requests.drop(responseEnvelope.returnsCount).dropLast(1).forEach {
+                            val original = it.second
+                            // no idea if .subscribe(original) would work here automatically as wel
+                            poGoApi.queueRequest(it.first).subscribe(
+                                    { original.onNext(it) }, { original.onError(it) }, { original.onCompleted() })
+                        }
                     }
                 }
                 for (payload in responseEnvelope.returnsList) {
