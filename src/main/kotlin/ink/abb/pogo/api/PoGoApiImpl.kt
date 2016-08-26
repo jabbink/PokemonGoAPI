@@ -92,8 +92,10 @@ class PoGoApiImpl(okHttpClient: OkHttpClient, val credentialProvider: Credential
             val minRefresh = it.response.settings.mapSettings.getMapObjectsMinRefreshSeconds
             val maxRefresh = it.response.settings.mapSettings.getMapObjectsMaxRefreshSeconds
             val refresh = Math.min((maxRefresh - minRefresh) / 2 + minRefresh, minRefresh * 2)
-            fixedRateTimer(name = "GetMapObjects", daemon = true, initialDelay = 0L, period = TimeUnit.SECONDS.toMillis(refresh.toLong()), action = {
-                queueRequest(GetMapObjects(poGoApi))
+            fixedRateTimer(name = "GetMapObjects", daemon = true, initialDelay = 1000L, period = TimeUnit.SECONDS.toMillis(refresh.toLong()), action = {
+                if (!(poGoApi.latitude == 0.0 && poGoApi.longitude == 0.0)) {
+                    queueRequest(GetMapObjects(poGoApi))
+                }
             })
         }
         queueRequest(inventory).subscribe {
@@ -213,8 +215,8 @@ class PoGoApiImpl(okHttpClient: OkHttpClient, val credentialProvider: Credential
                 val fort = mapCell.pokestops.find { it.id == response.fortId } ?: mapCell.gyms.find { it.id == response.fortId }
                 if (fort != null) {
                     fort.fetchedDetails = true
-                    fort.name = response.name
-                    fort.description = response.description
+                    fort._name = response.name
+                    fort._description = response.description
                 }
             }
             RequestType.CATCH_POKEMON -> {

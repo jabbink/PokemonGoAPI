@@ -4,5 +4,5 @@ import POGOProtos.Map.Fort.FortDataOuterClass
 import ink.abb.pogo.api.PoGoApi
 
 class Pokestop(poGoApi: PoGoApi, fortData: FortDataOuterClass.FortData) : Fort(poGoApi, fortData) {
-    var cooldownCompleteTimestampMs = 0L
+    var cooldownCompleteTimestampMs = fortData.cooldownCompleteTimestampMs
 }

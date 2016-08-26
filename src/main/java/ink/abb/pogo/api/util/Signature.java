@@ -36,6 +36,8 @@ public class Signature {
         byte[] authTicketBA = null;
         if (authTicket != null) {
             authTicketBA = builder.getAuthTicket().toByteArray();
+        } else {
+            authTicketBA = builder.getAuthInfo().toByteArray();
         }
 
         if (authTicketBA != null) {
@@ -76,7 +78,7 @@ public class Signature {
          * TODO:
          * 0.33.0 = 2016080700
          * 0.35.0 = 2016082200
-         *  xxHash64(sha1(value_from_above).ToByteArray(), 0x88533787)
+         *  xxHash64("\""+ sha1(value_from_above) +"\"".ToByteArray(), 0x88533787)
          */
 
         sigBuilder.setUnknown25(-8537042734809897855L);
@@ -140,7 +142,7 @@ public class Signature {
     private static int getLocationHash1(byte[] authTicket,
                                         RequestEnvelopeOuterClass.RequestEnvelope.Builder builder) {
         XXHashFactory factory = XXHashFactory.fastestInstance();
-        StreamingXXHash32 xx32 = factory.newStreamingHash32(0x1B845238);
+        StreamingXXHash32 xx32 = factory.newStreamingHash32(0x61656632);
         xx32.update(authTicket, 0, authTicket.length);
         byte[] bytes = new byte[8 * 3];
 
@@ -161,7 +163,7 @@ public class Signature {
         System.arraycopy(getBytes(builder.getLongitude()), 0, bytes, 8, 8);
         System.arraycopy(getBytes(builder.getAccuracy()), 0, bytes, 16, 8);
 
-        StreamingXXHash32 xx32 = factory.newStreamingHash32(0x1B845238);
+        StreamingXXHash32 xx32 = factory.newStreamingHash32(0x61656632);
         xx32.update(bytes, 0, bytes.length);
 
         return xx32.getValue();
@@ -169,7 +171,7 @@ public class Signature {
 
     private static long getRequestHash(byte[] authTicket, byte[] request) {
         XXHashFactory factory = XXHashFactory.fastestInstance();
-        StreamingXXHash64 xx64 = factory.newStreamingHash64(0x1B845238);
+        StreamingXXHash64 xx64 = factory.newStreamingHash64(0x61656632);
         xx64.update(authTicket, 0, authTicket.length);
         xx64 = factory.newStreamingHash64(xx64.getValue());
         xx64.update(request, 0, request.length);

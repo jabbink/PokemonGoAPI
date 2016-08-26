@@ -26,7 +26,7 @@ import java.util.concurrent.TimeUnit
 class ActionQueue(val poGoApi: PoGoApi, val okHttpClient: OkHttpClient, val credentialProvider: CredentialProvider, val deviceInfo: SignatureOuterClass.Signature.DeviceInfo) {
     val maxItems = 10
 
-    val queueInterval = 1000L
+    val queueInterval = 300L
 
     val requestQueue = ConcurrentLinkedDeque<Pair<ServerRequest, ReplaySubject<ServerRequest>>>()
     val didAction = PublishSubject.create<Nothing>()
@@ -141,6 +141,7 @@ class ActionQueue(val poGoApi: PoGoApi, val okHttpClient: OkHttpClient, val cred
                             responseEnvelope.apiUrl, responseEnvelope.error))
                 } else if (responseEnvelope.statusCode == 53) {
                     // 53 means that the api_endpoint was not correctly set, should be at this point, though, so redo the request
+                    Thread.sleep(queueInterval)
                     return sendRequests(requests)
                 }
 
@@ -151,7 +152,14 @@ class ActionQueue(val poGoApi: PoGoApi, val okHttpClient: OkHttpClient, val cred
                 var count = 0
                 if (responseEnvelope.returnsCount != requests.size + 1) {
                     System.err.println("Inconsistent replies received; expected "+ requests.size + 1 +" payloads; received "+ responseEnvelope.returnsCount);
-                    return sendRequests(requests)
+                    System.err.println("Probable culprit:")
+                    if (responseEnvelope.returnsCount == requests.size) {
+                        System.err.println("Captcha request - ignoring")
+                    } else {
+                        System.err.println(requests[responseEnvelope.returnsCount].first.getRequestType())
+                        System.err.println(requests[responseEnvelope.returnsCount].first.build(poGoApi).toString())
+                        requests.drop(responseEnvelope.returnsCount).forEach { poGoApi.queueRequest(it.first) }
+                    }
                 }
                 for (payload in responseEnvelope.returnsList) {
                     if (count < requests.size) {

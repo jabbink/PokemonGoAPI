@@ -9,8 +9,22 @@ abstract class Fort(val poGoApi: PoGoApi, val fortData: FortDataOuterClass.FortD
 
     var fetchedDetails = false
 
-    var name: String? = null
-    var description: String? = null
+    var _name = ""
+    val name: String
+        get() {
+            if (!fetchedDetails) {
+                poGoApi.queueRequest(getFortDetails()).toBlocking()
+            }
+            return _name
+        }
+    var _description = ""
+    val description: String
+        get() {
+            if (!fetchedDetails) {
+                poGoApi.queueRequest(getFortDetails()).toBlocking()
+            }
+            return _description
+        }
 
     fun equals(that: Fort): Boolean {
         return that.id == id
