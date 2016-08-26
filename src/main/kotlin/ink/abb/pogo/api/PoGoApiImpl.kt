@@ -118,7 +118,34 @@ class PoGoApiImpl(okHttpClient: OkHttpClient, val credentialProvider: Credential
             RequestType.GET_PLAYER -> {
                 val response = serverRequest.response as GetPlayerResponseOuterClass.GetPlayerResponse
                 this.playerData = response.playerData
-                if (playerData.tutorialStateCount == 0) {
+                val tut = MarkTutorialComplete().withSendMarketingEmails(false).withSendPushNotifications(false)
+                if (!playerData.tutorialStateList.contains(TutorialStateOuterClass.TutorialState.LEGAL_SCREEN)) {
+                    tut.withTutorialsCompleted(TutorialStateOuterClass.TutorialState.LEGAL_SCREEN)
+                }
+                if (!playerData.tutorialStateList.contains(TutorialStateOuterClass.TutorialState.POKEMON_CAPTURE)) {
+                    // No starter selected; get that Pikachu
+                    val encounterTut = EncounterTutorialComplete().withPokemonId(PokemonIdOuterClass.PokemonId.PIKACHU)
+                    queueRequest(encounterTut)
+
+                    tut.withTutorialsCompleted(TutorialStateOuterClass.TutorialState.POKEMON_CAPTURE)
+                            .withTutorialsCompleted(TutorialStateOuterClass.TutorialState.POKEMON_BERRY)
+                }
+                if (!playerData.tutorialStateList.contains(TutorialStateOuterClass.TutorialState.USE_ITEM)) {
+                    tut.withTutorialsCompleted(TutorialStateOuterClass.TutorialState.USE_ITEM)
+                }
+                if (!playerData.tutorialStateList.contains(TutorialStateOuterClass.TutorialState.POKESTOP_TUTORIAL)) {
+                    tut.withTutorialsCompleted(TutorialStateOuterClass.TutorialState.POKESTOP_TUTORIAL)
+                }
+                if (!playerData.tutorialStateList.contains(TutorialStateOuterClass.TutorialState.ACCOUNT_CREATION)) {
+                    tut.withTutorialsCompleted(TutorialStateOuterClass.TutorialState.ACCOUNT_CREATION)
+                }
+                if (!playerData.tutorialStateList.contains(TutorialStateOuterClass.TutorialState.FIRST_TIME_EXPERIENCE_COMPLETE)) {
+                    tut.withTutorialsCompleted(TutorialStateOuterClass.TutorialState.FIRST_TIME_EXPERIENCE_COMPLETE)
+                }
+                if (this.inventory.playerStats.level >= 5 && !playerData.tutorialStateList.contains(TutorialStateOuterClass.TutorialState.GYM_TUTORIAL)) {
+                    tut.withTutorialsCompleted(TutorialStateOuterClass.TutorialState.GYM_TUTORIAL)
+                }
+                /*if (playerData.tutorialStateCount == 0) {
                     val encounterTut = EncounterTutorialComplete().withPokemonId(PokemonIdOuterClass.PokemonId.PIKACHU)
                     queueRequest(encounterTut)
                     val avatar = SetAvatar().withPlayerAvatar(PlayerAvatarOuterClass.PlayerAvatar.newBuilder().build())
@@ -135,6 +162,10 @@ class PoGoApiImpl(okHttpClient: OkHttpClient, val credentialProvider: Credential
                             .withTutorialsCompleted(TutorialStateOuterClass.TutorialState.USE_ITEM)
                             .withTutorialsCompleted(TutorialStateOuterClass.TutorialState.GYM_TUTORIAL)
                     queueRequest(tut)
+                }*/
+                if (tut.getBuilder().tutorialsCompletedCount > 0) {
+                    queueRequest(tut)
+                    queueRequest(GetPlayer())
                 }
                 playerData.currenciesList.forEach {
                     this.inventory.currencies.getOrPut(it.name, { AtomicInteger(0) }).set(it.amount)
@@ -219,6 +250,9 @@ class PoGoApiImpl(okHttpClient: OkHttpClient, val credentialProvider: Credential
                     this.inventory.gems.addAndGet(response.gemsAwarded)
                     response.itemsAwardedList.forEach {
                         this.inventory.items.getOrPut(it.itemId, { AtomicInteger(0) }).addAndGet(it.itemCount)
+                    }
+                    if (pokestop != null) {
+                        pokestop.cooldownCompleteTimestampMs = response.cooldownCompleteTimestampMs
                     }
                     // TODO: Can't change experience here...
                 } else if (response.result == FortSearchResponse.Result.IN_COOLDOWN_PERIOD) {
