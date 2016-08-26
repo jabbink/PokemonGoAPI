@@ -58,7 +58,9 @@ class ActionQueue(val poGoApi: PoGoApi, val okHttpClient: OkHttpClient, val cred
                     }
                 }
 
-                sendRequests(queue.map { it })
+                if (queue.isNotEmpty()) {
+                    sendRequests(queue.map { it })
+                }
 
                 //println("Time end")
                 didAction.onNext(null)
