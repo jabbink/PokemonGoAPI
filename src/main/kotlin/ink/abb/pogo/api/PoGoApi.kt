@@ -15,6 +15,7 @@ import rx.Observable
 interface PoGoApi {
     var latitude: Double
     var longitude: Double
+    var altitude: Double
 
     val startTime: Long
 
@@ -42,8 +43,9 @@ interface PoGoApi {
 
     val initialized: Boolean
 
-    fun setLocation(latitude: Double, longitude: Double) {
+    fun setLocation(latitude: Double, longitude: Double, altitude: Double) {
         this.latitude = latitude
         this.longitude = longitude
+        this.altitude = longitude
     }
 }

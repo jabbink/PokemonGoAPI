@@ -3,8 +3,8 @@ package ink.abb.pogo.api.util;
 import POGOProtos.Networking.Envelopes.AuthTicketOuterClass;
 import POGOProtos.Networking.Envelopes.RequestEnvelopeOuterClass;
 import POGOProtos.Networking.Envelopes.SignatureOuterClass;
-import POGOProtos.Networking.Envelopes.Unknown6OuterClass;
-import POGOProtos.Networking.Envelopes.Unknown6OuterClass.Unknown6.Unknown2;
+import POGOProtos.Networking.Platform.PlatformRequestTypeOuterClass;
+import POGOProtos.Networking.Platform.Requests.SendEncryptedSignatureRequestOuterClass;
 import POGOProtos.Networking.Requests.RequestOuterClass;
 import com.google.protobuf.ByteString;
 import ink.abb.pogo.api.PoGoApi;
@@ -22,7 +22,7 @@ public class Signature {
      * @param poGoApi the api
      * @param builder the requestenvelop builder
      */
-    public static void setSignature(PoGoApi poGoApi, RequestEnvelopeOuterClass.RequestEnvelope.Builder builder) {
+    public static void setSignature(PoGoApi poGoApi, RequestEnvelopeOuterClass.RequestEnvelope.Builder builder, Long lastRequest) {
         long curTime = poGoApi.currentTimeMillis();
         long timestampSinceStart = curTime - poGoApi.getStartTime();
 
@@ -33,7 +33,7 @@ public class Signature {
                 .setTimestampSinceStart(timestampSinceStart);
 
         AuthTicketOuterClass.AuthTicket authTicket = builder.getAuthTicket();
-        byte[] authTicketBA = null;
+        byte[] authTicketBA;
         if (authTicket != null) {
             authTicketBA = builder.getAuthTicket().toByteArray();
         } else {
@@ -50,20 +50,39 @@ public class Signature {
             sigBuilder.setDeviceInfo(deviceInfo);
         }
 
-        SignatureOuterClass.Signature.LocationFix.Builder locationFix =
-                SignatureOuterClass.Signature.LocationFix.newBuilder()
-                        .setProvider("fused")
-                        .setTimestampSnapshot(Math.max(timestampSinceStart - (long) (Math.random() * 300), 0))
-                        .setLatitude((float) poGoApi.getLatitude())
-                        .setLongitude((float) poGoApi.getLongitude())
-                        .setHorizontalAccuracy((float) (Math.random() * 2.0 - 1.0))
-                        .setVerticalAccuracy((float) builder.getAccuracy())
-                        .setProviderStatus(3)
-                        .setLocationType(1);
+        // ~1 locationfix per 1.5 sec
 
-        builder.setMsSinceLastLocationfix(locationFix.getTimestampSnapshot());
+        int locationFixCount = 1;
+        double diff = (Math.random() * 500.0 + 1250.0);
+        if (curTime - lastRequest > 1000) {
+            locationFixCount = (int) Math.ceil((curTime - lastRequest) / diff);
+        }
+        System.out.println("Sending " + locationFixCount + " location fixes");
 
-        sigBuilder.addLocationFix(locationFix.build());
+
+        for (int i = 0; i < locationFixCount; i++) {
+            double lat = poGoApi.getLatitude();
+            double lng = poGoApi.getLongitude();
+            if (i < locationFixCount - 1) {
+                lat = offsetOnLatLong(lat, Math.random() * 100.0 + 10.0);
+                lng = offsetOnLatLong(lng, Math.random() * 100.0 + 10.0);
+            }
+            SignatureOuterClass.Signature.LocationFix.Builder locationFix =
+                    SignatureOuterClass.Signature.LocationFix.newBuilder()
+                            .setProvider("fused")
+                            .setTimestampSnapshot(Math.max(timestampSinceStart - Math.round((locationFixCount - i - 1) * diff) - (long) (Math.random() * 300), 0))
+                            .setLatitude((float) lat)
+                            .setLongitude((float) lng)
+                            .setAltitude((float) (poGoApi.getAltitude() + Math.random() - 0.5))
+                            .setHorizontalAccuracy(-1)
+                            .setVerticalAccuracy((float) (15 + (23 - 15) * Math.random()))
+                            .setProviderStatus(3)
+                            .setLocationType(1);
+
+            builder.setMsSinceLastLocationfix(locationFix.getTimestampSnapshot());
+
+            sigBuilder.addLocationFix(locationFix.build());
+        }
 
         /*SignatureOuterClass.Signature.ActivityStatus.Builder activityStatus = SignatureOuterClass.Signature.ActivityStatus.newBuilder()
                 .setUnknownStatus(true)
@@ -81,27 +100,28 @@ public class Signature {
          *  xxHash64("\""+ sha1(value_from_above) +"\"".ToByteArray(), 0x88533787)
          */
 
-        sigBuilder.setUnknown25(-8537042734809897855L);
+        sigBuilder.setUnknown25(Constants.UNKNOWN_25);
 
         Random sRandom = new Random();
 
         SignatureOuterClass.Signature.SensorInfo.Builder sensorInfo = SignatureOuterClass.Signature.SensorInfo.newBuilder()
                 .setTimestampSnapshot(Math.max(timestampSinceStart - (long) (Math.random() * 300), 0))
-                .setMagnetometerX(-0.7 + sRandom.nextDouble() * 1.4)
-                .setMagnetometerY(-0.7 + sRandom.nextDouble() * 1.4)
-                .setMagnetometerZ(-0.7 + sRandom.nextDouble() * 1.4)
-                .setAngleNormalizedX(-55.0 + sRandom.nextDouble() * 110.0)
-                .setAngleNormalizedY(-55.0 + sRandom.nextDouble() * 110.0)
-                .setAngleNormalizedZ(-55.0 + sRandom.nextDouble() * 110.0)
-                .setAccelRawX(0.1 + (0.7 - 0.1) * sRandom.nextDouble())
-                .setAccelRawY(0.1 + (0.8 - 0.1) * sRandom.nextDouble())
-                .setAccelRawZ(0.1 + (0.8 - 0.1) * sRandom.nextDouble())
+                .setMagneticFieldX(-0.7 + sRandom.nextDouble() * 1.4)
+                .setMagneticFieldY(-0.7 + sRandom.nextDouble() * 1.4)
+                .setMagneticFieldZ(-0.7 + sRandom.nextDouble() * 1.4)
+                .setRotationVectorX(-55.0 + sRandom.nextDouble() * 110.0)
+                .setRotationVectorY(-55.0 + sRandom.nextDouble() * 110.0)
+                .setRotationVectorZ(-55.0 + sRandom.nextDouble() * 110.0)
+                .setLinearAccelerationX(0.1 + (0.7 - 0.1) * sRandom.nextDouble())
+                .setLinearAccelerationY(0.1 + (0.8 - 0.1) * sRandom.nextDouble())
+                .setLinearAccelerationZ(0.1 + (0.8 - 0.1) * sRandom.nextDouble())
                 .setGyroscopeRawX(-1.0 + sRandom.nextDouble() * 2.0)
                 .setGyroscopeRawY(-1.0 + sRandom.nextDouble() * 2.0)
                 .setGyroscopeRawZ(-1.0 + sRandom.nextDouble() * 2.0)
-                .setAccelNormalizedX(-1.0 + sRandom.nextDouble() * 2.0)
-                .setAccelNormalizedY(6.0 + (9.0 - 6.0) * sRandom.nextDouble())
-                .setAccelNormalizedZ(-1.0 + (8.0 - (-1.0)) * sRandom.nextDouble())
+                .setGravityX(-1.0 + sRandom.nextDouble() * 2.0)
+                .setGravityY(6.0 + (9.0 - 6.0) * sRandom.nextDouble())
+                // wat? Copied from Grover-C13 repo, makes no sense tbh
+                .setGravityZ(-1.0 + (8.0 - (-1.0)) * sRandom.nextDouble())
                 .setAccelerometerAxes(3);
 
         sigBuilder.setSensorInfo(sensorInfo);
@@ -118,10 +138,10 @@ public class Signature {
         byte[] iv = new byte[32];
         new Random().nextBytes(iv);
         byte[] encrypted = Crypto.encrypt(uk2, iv).toByteBuffer().array();
-        Unknown6OuterClass.Unknown6 uk6 = Unknown6OuterClass.Unknown6.newBuilder()
-                .setRequestType(6)
-                .setUnknown2(Unknown2.newBuilder().setEncryptedSignature(ByteString.copyFrom(encrypted))).build();
-        builder.addUnknown6(uk6);
+        RequestEnvelopeOuterClass.RequestEnvelope.PlatformRequest platformRequest = RequestEnvelopeOuterClass.RequestEnvelope.PlatformRequest.newBuilder()
+                .setType(PlatformRequestTypeOuterClass.PlatformRequestType.SEND_ENCRYPTED_SIGNATURE)
+                .setRequestMessage(SendEncryptedSignatureRequestOuterClass.SendEncryptedSignatureRequest.newBuilder().setEncryptedSignature(ByteString.copyFrom(encrypted)).build().toByteString()).build();
+        builder.addPlatformRequests(platformRequest);
     }
 
     private static byte[] getBytes(double input) {
@@ -142,7 +162,7 @@ public class Signature {
     private static int getLocationHash1(byte[] authTicket,
                                         RequestEnvelopeOuterClass.RequestEnvelope.Builder builder) {
         XXHashFactory factory = XXHashFactory.fastestInstance();
-        StreamingXXHash32 xx32 = factory.newStreamingHash32(0x61656632);
+        StreamingXXHash32 xx32 = factory.newStreamingHash32(Constants.HASH_SEED);
         xx32.update(authTicket, 0, authTicket.length);
         byte[] bytes = new byte[8 * 3];
 
@@ -163,7 +183,7 @@ public class Signature {
         System.arraycopy(getBytes(builder.getLongitude()), 0, bytes, 8, 8);
         System.arraycopy(getBytes(builder.getAccuracy()), 0, bytes, 16, 8);
 
-        StreamingXXHash32 xx32 = factory.newStreamingHash32(0x61656632);
+        StreamingXXHash32 xx32 = factory.newStreamingHash32(Constants.HASH_SEED);
         xx32.update(bytes, 0, bytes.length);
 
         return xx32.getValue();
@@ -171,10 +191,16 @@ public class Signature {
 
     private static long getRequestHash(byte[] authTicket, byte[] request) {
         XXHashFactory factory = XXHashFactory.fastestInstance();
-        StreamingXXHash64 xx64 = factory.newStreamingHash64(0x61656632);
+        StreamingXXHash64 xx64 = factory.newStreamingHash64(Constants.HASH_SEED);
         xx64.update(authTicket, 0, authTicket.length);
         xx64 = factory.newStreamingHash64(xx64.getValue());
         xx64.update(request, 0, request.length);
         return xx64.getValue();
+    }
+
+    private static float offsetOnLatLong(double locationParam, double ran) {
+        double round = 6378137;
+        double dl = ran / (round * Math.cos(Math.PI * locationParam / 180));
+        return (float) (locationParam + dl * 180 / Math.PI);
     }
 }

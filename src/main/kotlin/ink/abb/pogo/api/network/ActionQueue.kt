@@ -28,6 +28,8 @@ class ActionQueue(val poGoApi: PoGoApi, val okHttpClient: OkHttpClient, val cred
 
     val queueInterval = 300L
 
+    var lastRequest = poGoApi.currentTimeMillis()
+
     val requestQueue = ConcurrentLinkedDeque<Pair<ServerRequest, ReplaySubject<ServerRequest>>>()
     val didAction = PublishSubject.create<Nothing>()
 
@@ -47,15 +49,24 @@ class ActionQueue(val poGoApi: PoGoApi, val okHttpClient: OkHttpClient, val cred
                 var taken = 0
                 val queue = mutableListOf<Pair<ServerRequest, ReplaySubject<ServerRequest>>>()
                 val curTime = poGoApi.currentTimeMillis()
-                while (requestQueue.isNotEmpty() && taken++ < maxItems) {
-                    val next = requestQueue.peek()
+
+                val newQueue = ConcurrentLinkedDeque<Pair<ServerRequest, ReplaySubject<ServerRequest>>>()
+                while (requestQueue.isNotEmpty() && taken < maxItems) {
+                    val next = requestQueue.pop()
                     val type = next.first.getRequestType()
                     val lastUsed = lastUseds.getOrElse(type, { 0 })
                     val rateLimit = rateLimits.getOrElse(type, { 0 })
                     if (curTime > lastUsed + rateLimit) {
                         lastUseds.put(type, curTime)
-                        queue.add(requestQueue.pop())
+                        queue.add(next)
+                        taken++
+                    } else {
+                        println("Skipping $type, because $curTime > $lastUsed + $rateLimit")
+                        newQueue.offer(next)
                     }
+                }
+                while (newQueue.isNotEmpty()) {
+                    requestQueue.offer(newQueue.pop())
                 }
 
                 if (queue.isNotEmpty()) {
@@ -79,10 +90,12 @@ class ActionQueue(val poGoApi: PoGoApi, val okHttpClient: OkHttpClient, val cred
         val envelope = RequestEnvelopeOuterClass.RequestEnvelope.newBuilder()
         envelope.setAccuracy(Math.random() * 6.0 + 4.0).setLatitude(poGoApi.latitude).setLongitude(poGoApi.longitude)
         // TODO Set ticket when we have a valid one
-        if (authTicket != null && authTicket?.expireTimestampMs ?: 0 > poGoApi.currentTimeMillis() - CredentialProvider.REFRESH_TOKEN_BUFFER_TIME) {
+        if (authTicket?.expireTimestampMs ?: 0 > poGoApi.currentTimeMillis() - CredentialProvider.REFRESH_TOKEN_BUFFER_TIME) {
             envelope.authTicket = authTicket
+            println("Using authTicket: ${authTicket?.expireTimestampMs} > ${poGoApi.currentTimeMillis() - CredentialProvider.REFRESH_TOKEN_BUFFER_TIME}")
         } else {
             envelope.authInfo = credentialProvider.authInfo
+            println("Using authInfo because ${authTicket?.expireTimestampMs} < ${poGoApi.currentTimeMillis() - CredentialProvider.REFRESH_TOKEN_BUFFER_TIME}")
         }
         envelope.addAllRequests(requests.map {
             RequestOuterClass.Request.newBuilder()
@@ -102,7 +115,7 @@ class ActionQueue(val poGoApi: PoGoApi, val okHttpClient: OkHttpClient, val cred
 
         envelope.requestId = rand shl 32 or requestId;
 
-        Signature.setSignature(poGoApi, envelope)
+        Signature.setSignature(poGoApi, envelope, lastRequest)
 
         val stream = ByteArrayOutputStream()
         val request = envelope.build()
@@ -112,6 +125,7 @@ class ActionQueue(val poGoApi: PoGoApi, val okHttpClient: OkHttpClient, val cred
             System.err.println("Failed to write request to bytearray ouput stream. This should never happen")
         }
 
+        lastRequest = poGoApi.currentTimeMillis()
 
         val body = RequestBody.create(null, stream.toByteArray())
         val httpRequest = okhttp3.Request.Builder().url(apiEndpoint).post(body).build()
@@ -138,13 +152,15 @@ class ActionQueue(val poGoApi: PoGoApi, val okHttpClient: OkHttpClient, val cred
                     authTicket = responseEnvelope.authTicket
                 }
 
-                if (responseEnvelope.statusCode == 102) {
-                    throw LoginFailedException(String.format("Invalid Auth status code recieved, token not refreshed?",
+                if (responseEnvelope.statusCode == ResponseEnvelopeOuterClass.ResponseEnvelope.StatusCode.INVALID_AUTH_TOKEN) {
+                    throw LoginFailedException(String.format("Invalid Auth status code received, token not refreshed?",
                             responseEnvelope.apiUrl, responseEnvelope.error))
-                } else if (responseEnvelope.statusCode == 53) {
+                } else if (responseEnvelope.statusCode == ResponseEnvelopeOuterClass.ResponseEnvelope.StatusCode.REDIRECT) {
                     // 53 means that the api_endpoint was not correctly set, should be at this point, though, so redo the request
                     Thread.sleep(queueInterval)
                     return sendRequests(requests)
+                } else if (responseEnvelope.statusCode != ResponseEnvelopeOuterClass.ResponseEnvelope.StatusCode.OK && responseEnvelope.statusCode != ResponseEnvelopeOuterClass.ResponseEnvelope.StatusCode.OK_RPC_URL_IN_RESPONSE) {
+                    System.err.println("Unexpected response envelope status received: ${responseEnvelope.statusCode}; Responses are probably malformed or unreliable")
                 }
 
                 /**
@@ -161,14 +177,16 @@ class ActionQueue(val poGoApi: PoGoApi, val okHttpClient: OkHttpClient, val cred
                         System.err.println(requests[responseEnvelope.returnsCount].first.getRequestType())
                         System.err.println(requests[responseEnvelope.returnsCount].first.build(poGoApi).toString())
                         System.err.println("Envelope location: "+ envelope.latitude +" "+ envelope.longitude)
-                        requests.drop(responseEnvelope.returnsCount).dropLast(1).forEach {
+                        requests.drop(responseEnvelope.returnsCount).forEach {
                             val original = it.second
-                            // no idea if .subscribe(original) would work here automatically as wel
+                            // no idea if .subscribe(original) would work here automatically as well
+                            System.err.println("Re-queueing ${it.first.getRequestType()}, ${it.first.build(poGoApi).toString()}")
                             poGoApi.queueRequest(it.first).subscribe(
                                     { original.onNext(it) }, { original.onError(it) }, { original.onCompleted() })
                         }
                     }
                 }
+
                 for (payload in responseEnvelope.returnsList) {
                     if (count < requests.size) {
                         val serverReq = requests[count]

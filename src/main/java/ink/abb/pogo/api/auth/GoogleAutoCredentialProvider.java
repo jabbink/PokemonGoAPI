@@ -122,6 +122,8 @@ public class GoogleAutoCredentialProvider extends CredentialProvider {
 
     @Override
     public void login() throws LoginFailedException, RemoteServerException {
+        System.out.println("[PTC] Logging back in!");
+
         this.tokenInfo = login(username, password);
     }
 

@@ -131,6 +131,8 @@ public class PtcCredentialProvider extends CredentialProvider {
      * this uses pokemon.com's oauth endpoint and returns a usable AuthInfo without user interaction
      */
     public void login() throws LoginFailedException, RemoteServerException {
+        System.out.println("[PTC] Logging back in!");
+
         //TODO: stop creating an okhttp client per request
         Request get = new Request.Builder()
                 .url(PSYFramelordOmega)
@@ -237,8 +239,9 @@ public class PtcCredentialProvider extends CredentialProvider {
             this.tokenId = params[0].split("=")[1];
             this.expiresTimestamp = time.currentTimeMillis()
                     + (Integer.valueOf(params[1].split("=")[1]) * 1000);
+            System.out.println("Logged in with token "+ tokenId +" and expiry "+ expiresTimestamp);
         } catch (Exception e) {
-            throw new LoginFailedException("Failed to fetch token, body:" + body);
+            throw new LoginFailedException("Failed to fetch token, body: " + body);
         }
     }
 

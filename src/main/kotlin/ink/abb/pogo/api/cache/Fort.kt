@@ -23,10 +23,6 @@ abstract class Fort(val poGoApi: PoGoApi, val fortData: FortDataOuterClass.FortD
             return _description
         }
 
-    fun equals(that: Fort): Boolean {
-        return that.id == id
-    }
-
     fun getFortDetails(): FortDetails {
         return FortDetails().withFortId(id).withLatitude(fortData.latitude).withLongitude(fortData.longitude)
     }
@@ -52,5 +48,18 @@ abstract class Fort(val poGoApi: PoGoApi, val fortData: FortDataOuterClass.FortD
 
     override fun toString(): String {
         return "Fort(fortData=$fortData, id='$id', fetchedDetails=$fetchedDetails, name='$name', description=$description)"
+    }
+
+    override fun equals(other: Any?): Boolean{
+        if (this === other) return true
+        if (other !is Fort) return false
+
+        if (id != other.id) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int{
+        return id?.hashCode() ?: 0
     }
 }

@@ -26,10 +26,7 @@ import ink.abb.pogo.api.map.GetMapObjects
 import ink.abb.pogo.api.network.ActionQueue
 import ink.abb.pogo.api.network.ServerRequest
 import ink.abb.pogo.api.request.*
-import ink.abb.pogo.api.util.DeviceInfoGenerator
-import ink.abb.pogo.api.util.PokemonMetaRegistry
-import ink.abb.pogo.api.util.SystemTimeImpl
-import ink.abb.pogo.api.util.Time
+import ink.abb.pogo.api.util.*
 import okhttp3.OkHttpClient
 import rx.Observable
 import rx.subjects.ReplaySubject
@@ -59,7 +56,8 @@ class PoGoApiImpl(okHttpClient: OkHttpClient, val credentialProvider: Credential
 
     override var latitude: Double = 0.0
     override var longitude: Double = 0.0
-    private var horizontalAccuracy: Double = 0.0
+    override var altitude: Double = 0.0
+
     override val sessionHash = ByteArray(16)
     override val deviceInfo: SignatureOuterClass.Signature.DeviceInfo
 
