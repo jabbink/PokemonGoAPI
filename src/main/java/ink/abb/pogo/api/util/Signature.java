@@ -59,7 +59,6 @@ public class Signature {
         }
         System.out.println("Sending " + locationFixCount + " location fixes");
 
-
         for (int i = 0; i < locationFixCount; i++) {
             double lat = poGoApi.getLatitude();
             double lng = poGoApi.getLongitude();
@@ -70,7 +69,7 @@ public class Signature {
             SignatureOuterClass.Signature.LocationFix.Builder locationFix =
                     SignatureOuterClass.Signature.LocationFix.newBuilder()
                             .setProvider("fused")
-                            .setTimestampSnapshot(Math.max(timestampSinceStart - Math.round((locationFixCount - i - 1) * diff) - (long) (Math.random() * 300), 0))
+                            .setTimestampSnapshot(Math.round((locationFixCount - i) * diff) - (long) (Math.random() * 300))
                             .setLatitude((float) lat)
                             .setLongitude((float) lng)
                             .setAltitude((float) (poGoApi.getAltitude() + Math.random() - 0.5))
