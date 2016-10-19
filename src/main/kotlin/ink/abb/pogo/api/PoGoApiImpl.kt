@@ -270,6 +270,14 @@ class PoGoApiImpl(okHttpClient: OkHttpClient, val credentialProvider: Credential
                     }
                 }
             }
+            RequestType.ADD_FORT_MODIFIER -> {
+                val response = serverRequest.response as AddFortModifierResponseOuterClass.AddFortModifierResponse
+                if (response.result == AddFortModifierResponseOuterClass.AddFortModifierResponse.Result.SUCCESS) {
+                    val builder = serverRequest.getBuilder() as AddFortModifierMessageOuterClass.AddFortModifierMessageOrBuilder
+                    this.inventory.items.getOrPut(builder.modifierType, { AtomicInteger(0) }).andDecrement
+                    // TODO: Need map update...
+                }
+            }
             RequestType.GET_HATCHED_EGGS -> {
                 val response = serverRequest.response as GetHatchedEggsResponseOuterClass.GetHatchedEggsResponse
                 if (response.success) {
@@ -355,6 +363,19 @@ class PoGoApiImpl(okHttpClient: OkHttpClient, val credentialProvider: Credential
                 if (response.success) {
                     val builder = serverRequest.getBuilder() as UseItemCaptureMessageOuterClass.UseItemCaptureMessageOrBuilder
                     this.inventory.items.getOrPut(builder.itemId, { AtomicInteger(0) }).andDecrement
+                }
+            }
+            RequestType.USE_ITEM_POTION -> {
+                val response = serverRequest.response as UseItemPotionResponseOuterClass.UseItemPotionResponse
+                if (response.result == UseItemPotionResponseOuterClass.UseItemPotionResponse.Result.SUCCESS) {
+                    val builder = serverRequest.getBuilder() as UseItemPotionMessageOuterClass.UseItemPotionMessageOrBuilder
+                    this.inventory.items.getOrPut(builder.itemId, { AtomicInteger(0) }).andDecrement
+                    val pokemon = this.inventory.pokemon.get(builder.pokemonId)
+                    if (pokemon != null) {
+                        val newPokemon = PokemonDataOuterClass.PokemonData.newBuilder(pokemon.pokemonData)
+                        newPokemon.stamina = response.stamina
+                        this.inventory.pokemon.put(newPokemon.id, BagPokemon(this, newPokemon.build()))
+                    }
                 }
             }
             RequestType.USE_ITEM_XP_BOOST -> {
