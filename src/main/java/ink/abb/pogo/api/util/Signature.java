@@ -134,9 +134,7 @@ public class Signature {
         }
 
         byte[] uk2 = sigBuilder.build().toByteArray();
-        byte[] iv = new byte[32];
-        new Random().nextBytes(iv);
-        byte[] encrypted = Crypto.encrypt(uk2, iv).toByteBuffer().array();
+        byte[] encrypted = Crypto43.encrypt(uk2, timestampSinceStart).toByteBuffer().array();
         RequestEnvelopeOuterClass.RequestEnvelope.PlatformRequest platformRequest = RequestEnvelopeOuterClass.RequestEnvelope.PlatformRequest.newBuilder()
                 .setType(PlatformRequestTypeOuterClass.PlatformRequestType.SEND_ENCRYPTED_SIGNATURE)
                 .setRequestMessage(SendEncryptedSignatureRequestOuterClass.SendEncryptedSignatureRequest.newBuilder().setEncryptedSignature(ByteString.copyFrom(encrypted)).build().toByteString()).build();
