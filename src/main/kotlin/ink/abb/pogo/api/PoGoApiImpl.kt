@@ -281,28 +281,25 @@ class PoGoApiImpl(okHttpClient: OkHttpClient, val credentialProvider: Credential
             RequestType.GET_HATCHED_EGGS -> {
                 val response = serverRequest.response as GetHatchedEggsResponseOuterClass.GetHatchedEggsResponse
                 if (response.success) {
-                    response.candyAwardedList.withIndex().forEach {
-                        val pokemonId = response.getPokemonId(it.index)
-                        val pokemon = this.inventory.pokemon[pokemonId]
-                        val egg = this.inventory.eggs[pokemonId]
+                    // TODO: Add experience awarded, force inventory update to get the correct hatched pokemonData and assign candy
+                    response.pokemonIdList.withIndex().forEach {
+                        val pokemon = this.inventory.pokemon[it.value]
+                        val egg = this.inventory.eggs[it.value]
+                        this.inventory.currencies.getOrPut("STARDUST", { AtomicInteger(0) }).addAndGet(response.getStardustAwarded(it.index))
                         if (pokemon != null) {
                             val meta = PokemonMetaRegistry.getMeta(pokemon.pokemonData.pokemonId)
-                            this.inventory.candies.getOrPut(meta.family, { AtomicInteger(0) }).addAndGet(it.value)
+                            this.inventory.candies.getOrPut(meta.family, { AtomicInteger(0) }).addAndGet(response.getCandyAwarded(it.index))
                         }
                         if (egg != null) {
-                            this.inventory.eggs.remove(pokemonId)
+                            this.inventory.eggs.remove(it.value)
                             if (pokemon == null) {
                                 val meta = PokemonMetaRegistry.getMeta(egg.pokemonData.pokemonId)
-                                this.inventory.candies.getOrPut(meta.family, { AtomicInteger(0) }).addAndGet(it.value)
-                                this.inventory.pokemon.put(pokemonId, BagPokemon(this, egg.pokemonData))
+                                if (meta != null) { //it will try to get family of MISSINGNO pokemon
+                                    this.inventory.candies.getOrPut(meta.family, { AtomicInteger(0) }).addAndGet(response.getCandyAwarded(it.index))
+                                }
+                                this.inventory.pokemon.put(it.value, BagPokemon(this, egg.pokemonData)) //we are probably going to add a MISSINGNO pokemon to the pokebank
                             }
                         }
-                    }
-                    response.experienceAwardedList.forEach {
-                        // TODO: Add experience
-                    }
-                    response.stardustAwardedList.forEach {
-                        // TODO: Add stardust
                     }
                 }
             }
