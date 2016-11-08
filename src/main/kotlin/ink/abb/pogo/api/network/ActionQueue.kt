@@ -61,7 +61,7 @@ class ActionQueue(val poGoApi: PoGoApi, val okHttpClient: OkHttpClient, val cred
                         queue.add(next)
                         taken++
                     } else {
-                        println("Skipping $type, because $curTime > $lastUsed + $rateLimit")
+                        //println("Skipping $type, because $curTime > $lastUsed + $rateLimit")
                         newQueue.offer(next)
                     }
                 }

@@ -58,6 +58,8 @@ class PoGoApiImpl(okHttpClient: OkHttpClient, val credentialProvider: Credential
     override var longitude: Double = 0.0
     override var altitude: Double = 0.0
 
+    var lastMapRequest = 0L
+
     override val sessionHash = ByteArray(16)
     override val deviceInfo: SignatureOuterClass.Signature.DeviceInfo
 
@@ -92,7 +94,7 @@ class PoGoApiImpl(okHttpClient: OkHttpClient, val credentialProvider: Credential
             val refresh = Math.min((maxRefresh - minRefresh) / 2 + minRefresh, minRefresh * 2)
             fixedRateTimer(name = "GetMapObjects", daemon = true, initialDelay = 1000L, period = TimeUnit.SECONDS.toMillis(refresh.toLong()), action = {
                 if (!(poGoApi.latitude == 0.0 && poGoApi.longitude == 0.0)) {
-                    queueRequest(GetMapObjects(poGoApi))
+                    queueRequest(GetMapObjects(poGoApi, 3, lastMapRequest))
                 }
             })
         }
@@ -181,6 +183,7 @@ class PoGoApiImpl(okHttpClient: OkHttpClient, val credentialProvider: Credential
                 this.playerProfile = response
             }
             RequestType.GET_MAP_OBJECTS -> {
+                lastMapRequest = currentTimeMillis()
                 val response = serverRequest.response as GetMapObjectsResponseOuterClass.GetMapObjectsResponse
                 response.mapCellsList.forEach {
                     val gyms = it.fortsList.filter { it.type == FortType.GYM }.map {

@@ -8,10 +8,8 @@ import POGOProtos.Networking.Platform.Requests.SendEncryptedSignatureRequestOute
 import POGOProtos.Networking.Requests.RequestOuterClass;
 import com.google.protobuf.ByteString;
 import ink.abb.pogo.api.PoGoApi;
-import net.jpountz.xxhash.StreamingXXHash32;
-import net.jpountz.xxhash.StreamingXXHash64;
-import net.jpountz.xxhash.XXHashFactory;
 
+import java.nio.ByteBuffer;
 import java.util.Random;
 
 public class Signature {
@@ -57,7 +55,7 @@ public class Signature {
         if (curTime - lastRequest > 1000) {
             locationFixCount = (int) Math.ceil((curTime - lastRequest) / diff);
         }
-        System.out.println("Sending " + locationFixCount + " location fixes");
+        //System.out.println("Sending " + locationFixCount + " location fixes");
 
         for (int i = 0; i < locationFixCount; i++) {
             double lat = poGoApi.getLatitude();
@@ -158,41 +156,29 @@ public class Signature {
 
     private static int getLocationHash1(byte[] authTicket,
                                         RequestEnvelopeOuterClass.RequestEnvelope.Builder builder) {
-        XXHashFactory factory = XXHashFactory.fastestInstance();
-        StreamingXXHash32 xx32 = factory.newStreamingHash32(Constants.HASH_SEED);
-        xx32.update(authTicket, 0, authTicket.length);
+        int seed = Hasher.hash32(authTicket);
         byte[] bytes = new byte[8 * 3];
 
         System.arraycopy(getBytes(builder.getLatitude()), 0, bytes, 0, 8);
         System.arraycopy(getBytes(builder.getLongitude()), 0, bytes, 8, 8);
         System.arraycopy(getBytes(builder.getAccuracy()), 0, bytes, 16, 8);
 
-        xx32 = factory.newStreamingHash32(xx32.getValue());
-        xx32.update(bytes, 0, bytes.length);
-        return xx32.getValue();
+        return Hasher.hash32salt(bytes, Hasher.intToByteArray(seed));
     }
 
     private static int getLocationHash2(RequestEnvelopeOuterClass.RequestEnvelope.Builder builder) {
-        XXHashFactory factory = XXHashFactory.fastestInstance();
         byte[] bytes = new byte[8 * 3];
 
         System.arraycopy(getBytes(builder.getLatitude()), 0, bytes, 0, 8);
         System.arraycopy(getBytes(builder.getLongitude()), 0, bytes, 8, 8);
         System.arraycopy(getBytes(builder.getAccuracy()), 0, bytes, 16, 8);
 
-        StreamingXXHash32 xx32 = factory.newStreamingHash32(Constants.HASH_SEED);
-        xx32.update(bytes, 0, bytes.length);
-
-        return xx32.getValue();
+        return Hasher.hash32(bytes);
     }
 
     private static long getRequestHash(byte[] authTicket, byte[] request) {
-        XXHashFactory factory = XXHashFactory.fastestInstance();
-        StreamingXXHash64 xx64 = factory.newStreamingHash64(Constants.HASH_SEED);
-        xx64.update(authTicket, 0, authTicket.length);
-        xx64 = factory.newStreamingHash64(xx64.getValue());
-        xx64.update(request, 0, request.length);
-        return xx64.getValue();
+        byte[] seed = ByteBuffer.allocate(8).putLong(Hasher.hash64(authTicket).longValue()).array();
+        return Hasher.hash64salt(request, seed).longValue();
     }
 
     private static float offsetOnLatLong(double locationParam, double ran) {
