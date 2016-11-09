@@ -167,7 +167,6 @@ class ApiGenerator implements Plugin<Project> {
             def getBuilder = clazz.method(JMod.PUBLIC, builderClass, "getBuilder")
             getBuilder.body()._return(builderField)
 
-
             needApiLocation.forEach {
                 def isLat = it.toLowerCase().contains("lat")
                 buildMethod.body().add(builderField.invoke(it).arg(isLat ? apiParam.invoke("getLatitude") : apiParam.invoke("getLongitude")))

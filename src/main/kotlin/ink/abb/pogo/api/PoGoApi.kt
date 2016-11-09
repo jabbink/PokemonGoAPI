@@ -27,7 +27,7 @@ interface PoGoApi {
 
     fun handleResponse(serverRequest: ServerRequest)
 
-    fun handleRequest(serverRequest: ServerRequest)
+    fun <T : ServerRequest> handleRequest(serverRequest: T): T
 
     fun <T : ServerRequest> queueRequest(request: T): Observable<T>
 

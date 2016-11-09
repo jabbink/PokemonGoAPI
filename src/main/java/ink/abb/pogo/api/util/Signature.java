@@ -106,22 +106,22 @@ public class Signature {
                 .setMagneticFieldX(-0.7 + sRandom.nextDouble() * 1.4)
                 .setMagneticFieldY(-0.7 + sRandom.nextDouble() * 1.4)
                 .setMagneticFieldZ(-0.7 + sRandom.nextDouble() * 1.4)
-                .setRotationVectorX(-55.0 + sRandom.nextDouble() * 110.0)
-                .setRotationVectorY(-55.0 + sRandom.nextDouble() * 110.0)
-                .setRotationVectorZ(-55.0 + sRandom.nextDouble() * 110.0)
+                .setRotationRateX(-55.0 + sRandom.nextDouble() * 110.0)
+                .setRotationRateY(-55.0 + sRandom.nextDouble() * 110.0)
+                .setRotationRateZ(-55.0 + sRandom.nextDouble() * 110.0)
                 .setLinearAccelerationX(0.1 + (0.7 - 0.1) * sRandom.nextDouble())
                 .setLinearAccelerationY(0.1 + (0.8 - 0.1) * sRandom.nextDouble())
                 .setLinearAccelerationZ(0.1 + (0.8 - 0.1) * sRandom.nextDouble())
-                .setGyroscopeRawX(-1.0 + sRandom.nextDouble() * 2.0)
-                .setGyroscopeRawY(-1.0 + sRandom.nextDouble() * 2.0)
-                .setGyroscopeRawZ(-1.0 + sRandom.nextDouble() * 2.0)
+                .setAttitudePitch(-1.0 + sRandom.nextDouble() * 2.0)
+                .setAttitudeRoll(-1.0 + sRandom.nextDouble() * 2.0)
+                .setAttitudeYaw(-1.0 + sRandom.nextDouble() * 2.0)
                 .setGravityX(-1.0 + sRandom.nextDouble() * 2.0)
                 .setGravityY(6.0 + (9.0 - 6.0) * sRandom.nextDouble())
                 // wat? Copied from Grover-C13 repo, makes no sense tbh
                 .setGravityZ(-1.0 + (8.0 - (-1.0)) * sRandom.nextDouble())
-                .setAccelerometerAxes(3);
+                .setStatus(3);
 
-        sigBuilder.setSensorInfo(sensorInfo);
+        sigBuilder.addSensorInfo(sensorInfo);
 
 
         if (authTicketBA != null) {
