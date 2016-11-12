@@ -12,229 +12,171 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package ink.abb.pogo.api.util;
 
-import java.math.BigInteger;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 
 public class Hasher {
 
-    private static final int HASH_SEED = 0x61247FBF;
-
-    private static final String[] magic_table = {
-            "0x95C05F4D1512959E", "0xE4F3C46EEF0DCF07",
-            "0x6238DC228F980AD2", "0x53F3E3BC49607092",
-            "0x4E7BE7069078D625", "0x1016D709D1AD25FC",
-            "0x044E89B8AC76E045", "0xE0B684DDA364BFA1",
-            "0x90C533B835E89E5F", "0x3DAF462A74FA874F",
-            "0xFEA54965DD3EF5A0", "0x287A5D7CCB31B970",
-            "0xAE681046800752F8", "0x121C2D6EAF66EC6E",
-            "0xEE8F8CA7E090FB20", "0xCE1AE25F48FE0A52",};
-
-    private static final BigInteger ROUND_MAGIC = U128_hex("0x78F32468CD48D6DE", "0x14C983660183C0AE");
-    private static final BigInteger FINAL_MAGIC0 = U128_hex("0xBDB31B10864F3F87");
-    private static final BigInteger FINAL_MAGIC1 = U128_hex("0x5B7E9E828A9B8ABD");
-    private static final BigInteger UINT128_MAX = U128_hex("0xffffffffffffffffffffffffffffffff");
-    private static final BigInteger UINT128_CLEAR1 = U128_hex("0x7fffffffffffffffffffffffffffffff");
-    private static final BigInteger UINT128_CLEAR2 = U128_hex("0x3fffffffffffffffffffffffffffffff");
-    private static final BigInteger UINT_1 = new BigInteger("1");
-
-    private static BigInteger hi(BigInteger n) {
-        return n.shiftRight(32).and(new BigInteger("ffffffff", 16));
-    }
-
-    private static BigInteger lo(BigInteger n) {
-        return n.and(new BigInteger("ffffffff", 16));
-    }
-
-    private static BigInteger U128(String high, String low) {
-        return new BigInteger(high).shiftLeft(64).or(new BigInteger(low));
-    }
-
-    private static BigInteger U128_hex(String num) {
-        if (!num.startsWith("0x")) {
-            throw new NumberFormatException("Number was not hex: " + num);
-        }
-        return new BigInteger(num.substring(2), 16);
-    }
-
-    private static BigInteger U128_hex(String high, String low) {
-        if (!high.startsWith("0x")) {
-            throw new NumberFormatException("High number was not hex: " + high);
-        }
-        if (!low.startsWith("0x")) {
-            throw new NumberFormatException("Low number was not hex: " + low);
-        }
-        return new BigInteger(high.substring(2), 16).shiftLeft(64).or(new BigInteger(low.substring(2), 16));
-    }
-
-    private static BigInteger read_int64(byte[] p) {
-        long n = 0;
-        for (int i = 7; i >= 0; i--) {
-            n = (n << 8) | (p[i] & 0xff);
-        }
-        return fromLong(n);
-    }
+    private static final int HASH_SEED = 0x46e945f8;
+    public static long[] MAGIC_TABLE = new long[]{
+            0x2dd7caaefcf073ebL, 0xa9209937349cfe9cL,
+            0xb84bfc934b0e60efL, 0xff709c157b26e477L,
+            0x3936fd8735455112L, 0xca141bf22338d331L,
+            0xdd40e749cb64fd02L, 0x5e268f564b0deb26L,
+            0x658239596bdea9ecL, 0x31cedf33ac38c624L,
+            0x12f56816481b0cfdL, 0x94e9de155f40f095L,
+            0x5089c907844c6325L, 0xdf887e97d73c50e3L,
+            0xae8870787ce3c11dL, 0xa6767d18c58d2116L
+    };
+    private static final UInt128 ROUND_MAGIC = new UInt128(0x081570afdd535ec3L, 0xe3f0d44988bcdfabL);
+    private static final long FINAL_MAGIC_0 = 0xce7c4801d683e824L;
+    private static final long FINAL_MAGIC_1 = 0x6823775b1daad522L;
 
     public static int hash32(byte[] buffer) {
-        return hash32salt(buffer, intToByteArray(HASH_SEED));
+        return hash32Salt(buffer, toBytes(HASH_SEED));
     }
 
-    public static int hash32salt(byte[] buffer, byte[] salt) {
-        long result = hash64salt(buffer, salt).longValue();
-        return (int) ((result & 0xffffffffL) ^ (result >>> 32));
+    /**
+     * Computes 32-bit hash with salt
+     *
+     * @param buffer input to the hash function
+     * @param salt salt for the hash function
+     * @return hash for given inputs
+     */
+    public static int hash32Salt(byte[] buffer, byte[] salt) {
+        long result = hash64Salt(buffer, salt);
+        return (int) ((result & 0xFFFFFFFFL) ^ (result >>> 32));
     }
 
-    public static BigInteger hash64(byte[] buffer) {
-        return hash64salt(buffer, intToByteArray(HASH_SEED));
+    public static long hash64(byte[] buffer) {
+        return hash64Salt(buffer, toBytes(HASH_SEED));
     }
 
-    public static BigInteger hash64salt(byte[] buffer, byte[] salt) {
+    /**
+     * Computes 64-bit hash with salt
+     *
+     * @param buffer input to the hash function
+     * @param salt salt for the hash function
+     * @return hash for given inputs
+     */
+    public static long hash64Salt(byte[] buffer, byte[] salt) {
         byte[] newBuffer = new byte[buffer.length + salt.length];
         System.arraycopy(salt, 0, newBuffer, 0, salt.length);
-        System.arraycopy(buffer, 0, newBuffer, 0 + salt.length, buffer.length);
-        return compute_hash(newBuffer);
+        System.arraycopy(buffer, 0, newBuffer, salt.length, buffer.length);
+        return computeHash(newBuffer, newBuffer.length);
     }
 
-    public static long hash64salt64(byte[] buffer, long s) {
-        byte[] salt = ByteBuffer.allocate(8).putLong(s).array();
-        return hash64salt(buffer, salt).longValue();
+    public static long hash64Salt64(byte[] buffer, long salt) {
+        byte[] saltBytes = ByteBuffer.allocate(8).putLong(salt).array();
+        return hash64Salt(buffer, saltBytes);
     }
 
-    public static BigInteger compute_hash(byte[] in) {
-        int len = in.length;
-        int num_chunks = len / 128;
+    /**
+     * Computes hash for given input
+     *
+     * @param in input to hash function
+     * @param length length of input
+     * @return hash for given input
+     */
+    public static long computeHash(byte[] in, int length) {
+        int chunkCount = length >> 7;
 
         // copy tail, pad with zeroes
+        // TODO: try to avoid memcopy (work in place)
         byte[] tail = new byte[128];
-        int tail_size = len % 128;
-        System.arraycopy(in, len - tail_size, tail, 0, tail_size);
+        int tailSize = length & 0x7F;
+        System.arraycopy(in, length - tailSize, tail, 0, tailSize);
 
-        BigInteger hash;
-        if (num_chunks > 0) {
-            // Hash the first 128 bytes
-            hash = hash_chunk(in, 128);
+        UInt128 hash;
+        if (chunkCount != 0) {
+            hash = hashChunk(in, 128, 0); // Hash the first 128 bytes
         } else {
-            // Hash the tail
-            hash = hash_chunk(tail, tail_size);
+            hash = hashChunk(tail, tailSize, 0); // Hash the tail
         }
 
-        hash = fakeOverflow(hash.add(ROUND_MAGIC));
-
-        int in_offset = 128;
-        if (num_chunks > 0) {
-            while (--num_chunks > 0) {
-                hash = hash_muladd(hash, ROUND_MAGIC, hash_chunk(Arrays.copyOfRange(in, in_offset, in_offset + 128), 128));
-                in_offset += 128;
+        hash = hash.add(ROUND_MAGIC);
+        int offset = 0;
+        if (chunkCount != 0) {
+            while (--chunkCount != 0) {
+                offset += 128;
+                hash = hashMulAdd(hash, ROUND_MAGIC, hashChunk(in, 128, offset));
             }
-
-            if (tail_size > 0) {
-                hash = hash_muladd(hash, ROUND_MAGIC, hash_chunk(tail, tail_size));
+            if (tailSize != 0) {
+                hash = hashMulAdd(hash, ROUND_MAGIC, hashChunk(tail, tailSize, 0));
             }
         }
-
-        BigInteger x01 = new BigInteger("101", 16);
 
         // Finalize the hash
-        hash = fakeOverflow(hash.add(U128("" + (tail_size * 8), "0")));
-        if (hash.compareTo(U128_hex("0x7fffffffffffffff", "0xffffffffffffffff")) >= 0) {
-            hash = fakeOverflow(hash.add(UINT_1));
+        hash.add(new UInt128(0, tailSize * 8));
+        UInt128 temporary = new UInt128(hash);
+        temporary.add(new UInt128(1L, 0L));
+        if (temporary.high < 0) {
+            hash = temporary;
         }
-        hash = clearHighBits1(hash);
+        hash.clearHighBits(1);
 
-        long hash_high = hash.shiftRight(64).longValue();
-        long hash_low = hash.longValue();
-        long X = hash_high + hi(hash_low);
-        X = hi(X + hi(X) + 1) + hash_high;
-        long Y = (X << 32) + hash_low;
+        long hashHigh = hash.high;
+        long hashLow = hash.low;
 
-        long A = X + FINAL_MAGIC0.longValue();
-        if (fromLong(A).compareTo(fromLong(X)) < 0) {
-            A += 0x101;
-        }
+        long hash1 = hashHigh + (hashLow >>> 32);
+        hash1 = ((hash1 + (hash1 >>> 32) + 1L) >>> 32) + hashHigh;
+        long hash2 = (hash1 << 32) + hashLow;
 
-        long B = Y + FINAL_MAGIC1.longValue();
-        if (fromLong(B).compareTo(fromLong(Y)) < 0) {
-            B += 0x101;
+        long magicHash1 = hash1 + FINAL_MAGIC_0;
+        if (unsignedCompare(magicHash1, hash1)) {
+            magicHash1 += 0x101L;
         }
 
-        BigInteger H = fakeOverflow(fromLong(A).multiply(fromLong(B)));
-        H = fakeOverflow(fakeOverflow(x01.multiply(H.shiftRight(64))).add(fromLong(H.longValue())));
-        H = fakeOverflow(fakeOverflow(x01.multiply(H.shiftRight(64))).add(fromLong(H.longValue())));
-        if (H.shiftRight(64).longValue() > 0) {
-            H = H.add(x01);
+        long magicHash2 = hash2 + FINAL_MAGIC_1;
+        if (unsignedCompare(magicHash2, hash2)) {
+            magicHash2 += 0x101L;
         }
-        if (H.compareTo(new BigInteger("FFFFFFFFFFFFFEFE", 16)) > 0) {
-            H = H.add(x01);
+
+        UInt128 unsignedHash = UInt128.multiply(magicHash1, magicHash2);
+        unsignedHash.multiply(0x101L);
+        unsignedHash.multiply(0x101L);
+
+        if (unsignedHash.high != 0L) {
+            unsignedHash.add(new UInt128(0x101L, 0));
         }
-        return H;
+        if (unsignedCompare(0xFFFFFFFFFFFFFEFEL, unsignedHash.low)) {
+            unsignedHash.add(new UInt128(0x101L, 0));
+        }
+
+        return unsignedHash.low;
     }
 
-    private static BigInteger fakeOverflow(BigInteger in) {
-        return in.and(UINT128_MAX);
-    }
-
-    private static BigInteger clearHighBits1(BigInteger in) {
-        return in.and(UINT128_CLEAR1);
-    }
-    private static BigInteger clearHighBits2(BigInteger in) {
-        return in.and(UINT128_CLEAR2);
-    }
-
-    private static BigInteger hash_chunk(byte[] chunk, long size) {
-        BigInteger hash = new BigInteger("0");
+    private static UInt128 hashChunk(byte[] chunk, int size, int masterOffset) {
+        UInt128 hash = new UInt128(0L, 0L);
         for (int i = 0; i < 8; i++) {
             int offset = i * 16;
             if (offset >= size) {
                 break;
             }
-            BigInteger a = read_int64(Arrays.copyOfRange(chunk, offset, offset + 8));
-            BigInteger b = read_int64(Arrays.copyOfRange(chunk, offset + 8, offset + 16));
-
-            BigInteger tmp = fromLong(a.longValue() + U128_hex(magic_table[i * 2]).longValue());
-            BigInteger tmp2 = fromLong(b.longValue() + U128_hex(magic_table[i * 2 + 1]).longValue());
-            BigInteger mul = fakeOverflow(tmp.multiply(tmp2));
-
-            hash = fakeOverflow(hash.add(mul));
+            long first = readInt64(chunk, masterOffset + offset);
+            long second = readInt64(chunk, masterOffset + offset + 8);
+            long even = first + (MAGIC_TABLE[i * 2]);
+            long odd = second + (MAGIC_TABLE[i * 2 + 1]);
+            UInt128 mul = UInt128.multiply(even, odd);
+            hash.add(mul);
         }
-        return clearHighBits2(hash);
+        return hash.clearHighBits(2);
     }
 
-    private static BigInteger fromLong(long l) {
-        //"cheat" using hex conversions (lazy, I know)
-        return new BigInteger(Long.toHexString(l), 16);
-    }
-
-    private static long hi(long n) {
-        return n >>> 32;
-    }
-
-    private static long lo(long n) {
-        return (n & 0xffffffffL);
-    }
-
-    public static byte[] intToByteArray(int i) {
-        byte[] ret = new byte[4];
-        ret[3] = (byte) (i & 0xFF);
-        ret[2] = (byte) ((i >> 8) & 0xFF);
-        ret[1] = (byte) ((i >> 16) & 0xFF);
-        ret[0] = (byte) ((i >> 24) & 0xFF);
-        return ret;
-    }
-
-    private static BigInteger hash_muladd(BigInteger hash, BigInteger mul, BigInteger add) {
-        long a0 = lo(add).longValue();
-        long a1 = hi(add).longValue();
-        long a23 = add.shiftRight(64).longValue();
-        long m0 = lo(mul).longValue();
-        long m1 = hi(mul).longValue();
-        long m2 = lo(mul.shiftRight(64)).longValue();
-        long m3 = hi(mul.shiftRight(64)).longValue();
-        long h0 = lo(hash).longValue();
-        long h1 = hi(hash).longValue();
-        long h2 = lo(hash.shiftRight(64)).longValue();
-        long h3 = hi(hash.shiftRight(64)).longValue();
+    private static UInt128 hashMulAdd(UInt128 hash, UInt128 mul, UInt128 add) {
+        long a0 = add.low & 0xFFFFFFFFL;
+        long a1 = add.low >>> 32;
+        long a23 = add.high;
+        long m0 = mul.low & 0xFFFFFFFFL;
+        long m1 = mul.low >>> 32;
+        long m2 = mul.high & 0xFFFFFFFFL;
+        long m3 = mul.high >>> 32;
+        long h0 = hash.low & 0xFFFFFFFFL;
+        long h1 = hash.low >>> 32;
+        long h2 = hash.high & 0xFFFFFFFFL;
+        long h3 = hash.high >>> 32;
 
 		/* Column sums, before carry */
         long c0 = (h0 * m0);
@@ -247,13 +189,41 @@ public class Hasher {
 
 		/* Combine, add, and carry (bugs included) */
         long r2 = c2 + (c6 << 1) + a23;
-        long r3 = c3 + hi(r2);
+        long r3 = c3 + (r2 >>> 32);
+
         long r0 = c0 + (c4 << 1) + a0 + (r3 >>> 31);
-        long r1 = c1 + (c5 << 1) + a1 + hi(r0);
+        long r1 = c1 + (c5 << 1) + a1 + (r0 >>> 32);
 
 		/* Return as uint128_t */
-        BigInteger result = fromLong(r3 << 33 >>> 1).or(fromLong(lo(r2))).add(fromLong(hi(r1)));
-        result = fakeOverflow(result);
-        return fakeOverflow(result.shiftLeft(64)).or(fromLong(r1 << 32)).or(fromLong(lo(r0)));
+        // no carry during addition as bit63 = 0
+        return new UInt128((r1 << 32) | (r0 & 0xffffffffL), ((r3 << 33 >>> 1) | (r2 & 0xffffffffL)) + (r1 >>> 32));
+    }
+
+    private static long readInt64(byte[] bytes, int offset) { // 01, 02, 03, 04, 05, 06, 07, 08 -> 0x0807060504030201
+        // endian-safe read 64-bit integer
+        long value = 0;
+        for (int i = 7; i >= 0; i--) {
+            value = (value << 8) | (bytes[offset + i] & 0xff);
+        }
+        return value;
+    }
+
+    private static boolean unsignedCompare(long first, long second) {
+        return (first < second) ^ (first < 0) ^ (second < 0);
+    }
+
+    /**
+     * Converts given integer to an array of 4 bytes.
+     *
+     * @param value value to convert
+     * @return an array of 4 bytes containing the given integer
+     */
+    public static byte[] toBytes(int value) {
+        byte[] ret = new byte[4];
+        ret[3] = (byte) (value & 0xFF);
+        ret[2] = (byte) ((value >> 8) & 0xFF);
+        ret[1] = (byte) ((value >> 16) & 0xFF);
+        ret[0] = (byte) ((value >> 24) & 0xFF);
+        return ret;
     }
 }

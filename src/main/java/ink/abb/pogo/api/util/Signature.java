@@ -163,7 +163,7 @@ public class Signature {
         System.arraycopy(getBytes(builder.getLongitude()), 0, bytes, 8, 8);
         System.arraycopy(getBytes(builder.getAccuracy()), 0, bytes, 16, 8);
 
-        return Hasher.hash32salt(bytes, Hasher.intToByteArray(seed));
+        return Hasher.hash32Salt(bytes, Hasher.toBytes(seed));
     }
 
     private static int getLocationHash2(RequestEnvelopeOuterClass.RequestEnvelope.Builder builder) {
@@ -177,8 +177,8 @@ public class Signature {
     }
 
     private static long getRequestHash(byte[] authTicket, byte[] request) {
-        byte[] seed = ByteBuffer.allocate(8).putLong(Hasher.hash64(authTicket).longValue()).array();
-        return Hasher.hash64salt(request, seed).longValue();
+        byte[] seed = ByteBuffer.allocate(8).putLong(Hasher.hash64(authTicket)).array();
+        return Hasher.hash64Salt(request, seed);
     }
 
     private static float offsetOnLatLong(double locationParam, double ran) {

