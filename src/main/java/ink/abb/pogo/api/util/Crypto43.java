@@ -6,28 +6,22 @@ import java.nio.ByteOrder;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class Crypto43 {
-
-    private static class Rand {
-        public Long state;
-    }
-    
-    private static Rand rand = new Rand();
-
-    private static byte[] makeIv(Rand rand)  {
+    private byte[] makeIv(AtomicLong rand)  {
         byte[] iv = new byte[256];
         for (int i= 0; i < 256; i++) {
-            rand.state = (0x41C64E6D * rand.state) + 0x3039;
-            Long shiftedRand = rand.state >> 16;
+            rand.set((0x41C64E6D * rand.get()) + 0x3039);
+            Long shiftedRand = rand.get() >> 16;
             iv[i] = shiftedRand.byteValue();
         }
         return iv;
     }
 
-    private static byte makeIntegrityByte(Rand rand)  {
-        rand.state = (0x41C64E6D * rand.state) + 0x3039;
-        Long shiftedRand = rand.state >> 16;
+    private byte makeIntegrityByte(AtomicLong rand)  {
+        rand.set((0x41C64E6D * rand.get()) + 0x3039);
+        Long shiftedRand = rand.get() >> 16;
         byte lastbyte = shiftedRand.byteValue();
 
         byte v74 = (byte) ((lastbyte ^ 0x0C) & lastbyte);
@@ -41,13 +35,14 @@ public class Crypto43 {
      * @param msSinceStart
      * @return shuffled bytes
      */
-    public static CipherText encrypt(byte[] input, Long msSinceStart) {
+    public ByteBuffer encrypt(byte[] input, Long msSinceStart) {
         byte[] arr3;
         CipherText output;
 
-        rand.state = msSinceStart;
+        AtomicLong rand = new AtomicLong(msSinceStart);
 
         byte[] iv = makeIv(rand);
+
         output = new CipherText(input, msSinceStart);
 
         for (int i = 0; i < output.content.size(); ++i) {
@@ -72,10 +67,11 @@ public class Crypto43 {
                 current[k] = arr3[k];
         }
 
-        return output;
+        return output.toByteBuffer(rand);
     }
 
-    private static byte[] shuffle2(int[] vector) {
+
+    private byte[] shuffle2(int[] vector) {
         int[] tmp = new int[193];
         tmp[0] = vector[7] ^ vector[15];
         tmp[1] = ~vector[7];
@@ -1377,7 +1373,7 @@ public class Crypto43 {
         return shuffle2_2(tmp, vector);
     }
 
-    private static byte[] shuffle2_2(int[] tmp, int vector[]) {
+    private byte[] shuffle2_2(int[] tmp, int vector[]) {
         tmp[124] = tmp[79] | tmp[38];
         tmp[12] =
                 tmp[23] ^ tmp[45] ^ (tmp[132] ^ tmp[45]) & tmp[38] ^ (tmp[28] & ~(tmp[21] ^ tmp[12] ^ (tmp[11] ^ (tmp[21] | tmp[114])) & tmp[65] ^ tmp[56] & (tmp[1] ^ tmp[38] & ~tmp[4])) ^ tmp[56] & ~(tmp[81]
@@ -3487,7 +3483,7 @@ public class Crypto43 {
     }
 
 
-    public static class CipherText {
+    public class CipherText {
         byte[] prefix;
         public ArrayList<byte[]> content;
 
@@ -3529,8 +3525,9 @@ public class Crypto43 {
          * Convert this Ciptext to a ByteBuffer
          *
          * @return contents as bytebuffer
+         * @param rand
          */
-        public ByteBuffer toByteBuffer() {
+        public ByteBuffer toByteBuffer(AtomicLong rand) {
             ByteBuffer buff = ByteBuffer.allocate(totalsize).put(prefix);
             for (int i = 0; i < content.size(); ++i)
                 buff.put(content.get(i));
