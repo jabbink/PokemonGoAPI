@@ -19,6 +19,8 @@ interface PoGoApi {
 
     val startTime: Long
 
+    fun start();
+
     val deviceInfo: SignatureOuterClass.Signature.DeviceInfo
 
     fun currentTimeMillis(): Long
@@ -46,6 +48,6 @@ interface PoGoApi {
     fun setLocation(latitude: Double, longitude: Double, altitude: Double) {
         this.latitude = latitude
         this.longitude = longitude
-        this.altitude = longitude
+        this.altitude = altitude
     }
 }

@@ -13,14 +13,19 @@ import java.nio.ByteBuffer;
 import java.util.Random;
 
 public class Signature {
+    Crypto43 crypto43 = new Crypto43();
+    PoGoApi poGoApi;
+
+    public Signature(PoGoApi poGoApi) {
+        this.poGoApi = poGoApi;
+    }
 
     /**
      * Given a fully built request, set the signature correctly.
      *
-     * @param poGoApi the api
      * @param builder the requestenvelop builder
      */
-    public static void setSignature(PoGoApi poGoApi, RequestEnvelopeOuterClass.RequestEnvelope.Builder builder, Long lastRequest) {
+    public void setSignature(RequestEnvelopeOuterClass.RequestEnvelope.Builder builder, Long lastRequest) {
         long curTime = poGoApi.currentTimeMillis();
         long timestampSinceStart = curTime - poGoApi.getStartTime();
 
@@ -132,14 +137,14 @@ public class Signature {
         }
 
         byte[] uk2 = sigBuilder.build().toByteArray();
-        byte[] encrypted = Crypto43.encrypt(uk2, timestampSinceStart).toByteBuffer().array();
+        byte[] encrypted = crypto43.encrypt(uk2, timestampSinceStart).array();
         RequestEnvelopeOuterClass.RequestEnvelope.PlatformRequest platformRequest = RequestEnvelopeOuterClass.RequestEnvelope.PlatformRequest.newBuilder()
                 .setType(PlatformRequestTypeOuterClass.PlatformRequestType.SEND_ENCRYPTED_SIGNATURE)
                 .setRequestMessage(SendEncryptedSignatureRequestOuterClass.SendEncryptedSignatureRequest.newBuilder().setEncryptedSignature(ByteString.copyFrom(encrypted)).build().toByteString()).build();
         builder.addPlatformRequests(platformRequest);
     }
 
-    private static byte[] getBytes(double input) {
+    private byte[] getBytes(double input) {
         long rawDouble = Double.doubleToRawLongBits(input);
         return new byte[]{
                 (byte) (rawDouble >>> 56),
@@ -154,7 +159,7 @@ public class Signature {
     }
 
 
-    private static int getLocationHash1(byte[] authTicket,
+    private int getLocationHash1(byte[] authTicket,
                                         RequestEnvelopeOuterClass.RequestEnvelope.Builder builder) {
         int seed = Hasher.hash32(authTicket);
         byte[] bytes = new byte[8 * 3];
@@ -166,7 +171,7 @@ public class Signature {
         return Hasher.hash32Salt(bytes, Hasher.toBytes(seed));
     }
 
-    private static int getLocationHash2(RequestEnvelopeOuterClass.RequestEnvelope.Builder builder) {
+    private int getLocationHash2(RequestEnvelopeOuterClass.RequestEnvelope.Builder builder) {
         byte[] bytes = new byte[8 * 3];
 
         System.arraycopy(getBytes(builder.getLatitude()), 0, bytes, 0, 8);
@@ -176,12 +181,12 @@ public class Signature {
         return Hasher.hash32(bytes);
     }
 
-    private static long getRequestHash(byte[] authTicket, byte[] request) {
+    private long getRequestHash(byte[] authTicket, byte[] request) {
         byte[] seed = ByteBuffer.allocate(8).putLong(Hasher.hash64(authTicket)).array();
         return Hasher.hash64Salt(request, seed);
     }
 
-    private static float offsetOnLatLong(double locationParam, double ran) {
+    private float offsetOnLatLong(double locationParam, double ran) {
         double round = 6378137;
         double dl = ran / (round * Math.cos(Math.PI * locationParam / 180));
         return (float) (locationParam + dl * 180 / Math.PI);

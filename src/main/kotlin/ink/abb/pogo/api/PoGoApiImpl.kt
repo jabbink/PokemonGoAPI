@@ -79,7 +79,7 @@ class PoGoApiImpl(okHttpClient: OkHttpClient, val credentialProvider: Credential
     }
 
     // expensive IO function
-    fun start() {
+    override fun start() {
         credentialProvider.login()
         actionQueue.start()
         // TODO: correct?
@@ -94,7 +94,7 @@ class PoGoApiImpl(okHttpClient: OkHttpClient, val credentialProvider: Credential
             val refresh = Math.min((maxRefresh - minRefresh) / 2 + minRefresh, minRefresh * 2)
             fixedRateTimer(name = "GetMapObjects", daemon = true, initialDelay = 1000L, period = TimeUnit.SECONDS.toMillis(refresh.toLong()), action = {
                 if (!(poGoApi.latitude == 0.0 && poGoApi.longitude == 0.0)) {
-                    queueRequest(GetMapObjects(poGoApi, 3, 0L))
+                    queueRequest(GetMapObjects(poGoApi, 1, 0L))
                 }
             })
         }

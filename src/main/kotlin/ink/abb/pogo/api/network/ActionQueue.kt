@@ -24,6 +24,8 @@ import java.util.concurrent.ConcurrentLinkedDeque
 import java.util.concurrent.TimeUnit
 
 class ActionQueue(val poGoApi: PoGoApi, val okHttpClient: OkHttpClient, val credentialProvider: CredentialProvider, val deviceInfo: SignatureOuterClass.Signature.DeviceInfo) {
+    val signature = Signature(poGoApi)
+
     val maxItems = 10
 
     val queueInterval = 300L
@@ -115,7 +117,7 @@ class ActionQueue(val poGoApi: PoGoApi, val okHttpClient: OkHttpClient, val cred
 
         envelope.requestId = rand shl 32 or requestId;
 
-        Signature.setSignature(poGoApi, envelope, lastRequest)
+        signature.setSignature(envelope, lastRequest)
 
         val stream = ByteArrayOutputStream()
         val request = envelope.build()
