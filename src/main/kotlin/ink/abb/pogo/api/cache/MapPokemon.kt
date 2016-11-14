@@ -26,7 +26,7 @@ class MapPokemon {
     val poGoApi: PoGoApi
 
     val valid: Boolean
-        get() = poGoApi.currentTimeMillis() < expirationTimestampMs
+        get() = expirationTimestampMs == -1L || poGoApi.currentTimeMillis() < expirationTimestampMs
 
     constructor(poGoApi: PoGoApi, proto: MapPokemonOuterClass.MapPokemon) {
         this.encounterKind = EncounterKind.NORMAL

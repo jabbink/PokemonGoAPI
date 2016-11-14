@@ -94,7 +94,7 @@ class PoGoApiImpl(okHttpClient: OkHttpClient, val credentialProvider: Credential
             val refresh = Math.min((maxRefresh - minRefresh) / 2 + minRefresh, minRefresh * 2)
             fixedRateTimer(name = "GetMapObjects", daemon = true, initialDelay = 1000L, period = TimeUnit.SECONDS.toMillis(refresh.toLong()), action = {
                 if (!(poGoApi.latitude == 0.0 && poGoApi.longitude == 0.0)) {
-                    queueRequest(GetMapObjects(poGoApi, 3, lastMapRequest))
+                    queueRequest(GetMapObjects(poGoApi, 3, 0L))
                 }
             })
         }
@@ -282,6 +282,7 @@ class PoGoApiImpl(okHttpClient: OkHttpClient, val credentialProvider: Credential
                 val response = serverRequest.response as GetHatchedEggsResponseOuterClass.GetHatchedEggsResponse
                 if (response.success) {
                     // TODO: Add experience awarded, force inventory update to get the correct hatched pokemonData and assign candy
+                    queueRequest(GetInventory().withLastTimestampMs(0L)).toBlocking()
                     response.pokemonIdList.withIndex().forEach {
                         val pokemon = this.inventory.pokemon[it.value]
                         val egg = this.inventory.eggs[it.value]
@@ -411,6 +412,12 @@ class PoGoApiImpl(okHttpClient: OkHttpClient, val credentialProvider: Credential
                     System.err.println("Received challenge request!")
                     System.err.println(response.challengeUrl)
                     System.exit(1)
+                }
+            }
+            RequestType.SET_BUDDY_POKEMON -> {
+                val response = serverRequest.response as SetBuddyPokemonResponseOuterClass.SetBuddyPokemonResponse
+                if (response.result == SetBuddyPokemonResponseOuterClass.SetBuddyPokemonResponse.Result.SUCCESS) {
+                    queueRequest(GetPlayer()).toBlocking()
                 }
             }
             else -> {
