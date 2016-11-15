@@ -10,11 +10,18 @@ import com.google.protobuf.ByteString;
 import ink.abb.pogo.api.PoGoApi;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Random;
 
 public class Signature {
     Crypto43 crypto43 = new Crypto43();
     PoGoApi poGoApi;
+
+    private long lastTimestampSinceStart = 0;
+    private long lastCurTime = 0;
+    private SignatureOuterClass.Signature.SensorInfo.Builder lastSensorInfo;
+    private ArrayList<SignatureOuterClass.Signature.LocationFix> lastLocationFixes;
 
     public Signature(PoGoApi poGoApi) {
         this.poGoApi = poGoApi;
@@ -28,6 +35,9 @@ public class Signature {
     public void setSignature(RequestEnvelopeOuterClass.RequestEnvelope.Builder builder, Long lastRequest) {
         long curTime = poGoApi.currentTimeMillis();
         long timestampSinceStart = curTime - poGoApi.getStartTime();
+
+        lastTimestampSinceStart = timestampSinceStart;
+        lastCurTime = curTime;
 
         SignatureOuterClass.Signature.Builder sigBuilder = SignatureOuterClass.Signature.newBuilder()
                 .setLocationHash2(getLocationHash2(builder))
@@ -62,6 +72,7 @@ public class Signature {
         }
         //System.out.println("Sending " + locationFixCount + " location fixes");
 
+        lastLocationFixes = new ArrayList<>();
         for (int i = 0; i < locationFixCount; i++) {
             double lat = poGoApi.getLatitude();
             double lng = poGoApi.getLongitude();
@@ -83,7 +94,10 @@ public class Signature {
 
             builder.setMsSinceLastLocationfix(locationFix.getTimestampSnapshot());
 
-            sigBuilder.addLocationFix(locationFix.build());
+            SignatureOuterClass.Signature.LocationFix fix = locationFix.build();
+
+            sigBuilder.addLocationFix(fix);
+            lastLocationFixes.add(fix);
         }
 
         /*SignatureOuterClass.Signature.ActivityStatus.Builder activityStatus = SignatureOuterClass.Signature.ActivityStatus.newBuilder()
@@ -126,6 +140,8 @@ public class Signature {
                 .setGravityZ(-1.0 + (8.0 - (-1.0)) * sRandom.nextDouble())
                 .setStatus(3);
 
+        lastSensorInfo = sensorInfo;
+
         sigBuilder.addSensorInfo(sensorInfo);
 
 
@@ -158,6 +174,52 @@ public class Signature {
         };
     }
 
+    public boolean verifySignature(RequestEnvelopeOuterClass.RequestEnvelope.Builder builder, Long lastRequest) {
+        SignatureOuterClass.Signature.Builder sigBuilder = SignatureOuterClass.Signature.newBuilder()
+                .setLocationHash2(getLocationHash2(builder))
+                .setSessionHash(ByteString.copyFrom(poGoApi.getSessionHash()))
+                .setTimestamp(lastCurTime)
+                .setTimestampSinceStart(lastTimestampSinceStart);
+        AuthTicketOuterClass.AuthTicket authTicket = builder.getAuthTicket();
+
+        byte[] authTicketBA;
+        if (authTicket != null) {
+            authTicketBA = builder.getAuthTicket().toByteArray();
+        } else {
+            authTicketBA = builder.getAuthInfo().toByteArray();
+        }
+
+        SignatureOuterClass.Signature.DeviceInfo deviceInfo = poGoApi.getDeviceInfo();
+        if (deviceInfo != null) {
+            sigBuilder.setDeviceInfo(deviceInfo);
+        }
+        System.out.println("device info == "+ deviceInfo);
+
+        System.out.println("authTicketBA == "+ Arrays.toString(authTicketBA));
+
+        sigBuilder.setUnknown25(Constants.UNKNOWN_25);
+
+        if (authTicketBA != null) {
+            for (RequestOuterClass.Request serverRequest : builder.getRequestsList()) {
+                byte[] request = serverRequest.toByteArray();
+                sigBuilder.addRequestHash(getRequestHash(authTicketBA, request));
+            }
+
+            sigBuilder.setLocationHash1(getLocationHash1(authTicketBA, builder));
+        }
+
+        for (SignatureOuterClass.Signature.LocationFix fix : lastLocationFixes) {
+            sigBuilder.addLocationFix(fix);
+        }
+
+        sigBuilder.addSensorInfo(lastSensorInfo);
+        byte[] uk2 = sigBuilder.build().toByteArray();
+        byte[] encrypted = crypto43.encrypt(uk2, lastTimestampSinceStart).array();
+        RequestEnvelopeOuterClass.RequestEnvelope.PlatformRequest platformRequest = RequestEnvelopeOuterClass.RequestEnvelope.PlatformRequest.newBuilder()
+                .setType(PlatformRequestTypeOuterClass.PlatformRequestType.SEND_ENCRYPTED_SIGNATURE)
+                .setRequestMessage(SendEncryptedSignatureRequestOuterClass.SendEncryptedSignatureRequest.newBuilder().setEncryptedSignature(ByteString.copyFrom(encrypted)).build().toByteString()).build();
+        return Arrays.equals(builder.getPlatformRequests(0).toByteArray(), platformRequest.toByteArray());
+    }
 
     private int getLocationHash1(byte[] authTicket,
                                         RequestEnvelopeOuterClass.RequestEnvelope.Builder builder) {

@@ -76,5 +76,29 @@ class MapPokemon {
         return "MapPokemon(encounterKind=$encounterKind, spawnPointId='$spawnPointId', encounterId=$encounterId, pokemonId=$pokemonId, pokemonIdValue=$pokemonIdValue, expirationTimestampMs=$expirationTimestampMs, latitude=$latitude, longitude=$longitude)"
     }
 
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is MapPokemon) return false
+
+        if (encounterKind != other.encounterKind) return false
+        if (spawnPointId != other.spawnPointId) return false
+        if (encounterId != other.encounterId) return false
+        if (pokemonIdValue != other.pokemonIdValue) return false
+        if (latitude != other.latitude) return false
+        if (longitude != other.longitude) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = encounterKind.hashCode()
+        result = 31 * result + spawnPointId.hashCode()
+        result = 31 * result + encounterId.hashCode()
+        result = 31 * result + pokemonIdValue
+        result = 31 * result + latitude.hashCode()
+        result = 31 * result + longitude.hashCode()
+        return result
+    }
+
 
 }

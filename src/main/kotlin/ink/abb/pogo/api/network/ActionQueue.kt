@@ -118,6 +118,7 @@ class ActionQueue(val poGoApi: PoGoApi, val okHttpClient: OkHttpClient, val cred
         envelope.requestId = rand shl 32 or requestId;
 
         signature.setSignature(envelope, lastRequest)
+        //println("verification: ${signature.verifySignature(envelope, lastRequest)}")
 
         val stream = ByteArrayOutputStream()
         val request = envelope.build()

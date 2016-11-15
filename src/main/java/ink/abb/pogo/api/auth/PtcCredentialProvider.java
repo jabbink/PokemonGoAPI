@@ -279,4 +279,23 @@ public class PtcCredentialProvider extends CredentialProvider {
             return false;
         }
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof PtcCredentialProvider)) return false;
+
+        PtcCredentialProvider that = (PtcCredentialProvider) o;
+
+        if (!username.equals(that.username)) return false;
+        return password.equals(that.password);
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = username.hashCode();
+        result = 31 * result + password.hashCode();
+        return result;
+    }
 }

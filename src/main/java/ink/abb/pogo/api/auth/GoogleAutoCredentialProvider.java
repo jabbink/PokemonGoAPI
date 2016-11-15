@@ -136,4 +136,23 @@ public class GoogleAutoCredentialProvider extends CredentialProvider {
             this.refreshToken = refreshToken;
         }
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof GoogleAutoCredentialProvider)) return false;
+
+        GoogleAutoCredentialProvider that = (GoogleAutoCredentialProvider) o;
+
+        if (!username.equals(that.username)) return false;
+        return password.equals(that.password);
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = username.hashCode();
+        result = 31 * result + password.hashCode();
+        return result;
+    }
 }
