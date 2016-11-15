@@ -94,7 +94,7 @@ class PoGoApiImpl(okHttpClient: OkHttpClient, val credentialProvider: Credential
             val refresh = Math.min((maxRefresh - minRefresh) / 2 + minRefresh, minRefresh * 2)
             fixedRateTimer(name = "GetMapObjects-${credentialProvider.hashCode()}", daemon = true, initialDelay = 1000L, period = TimeUnit.SECONDS.toMillis(refresh.toLong()), action = {
                 if (!(poGoApi.latitude == 0.0 && poGoApi.longitude == 0.0)) {
-                    queueRequest(GetMapObjects(poGoApi, 3, poGoApi.lastMapRequest))
+                    queueRequest(GetMapObjects(poGoApi, 3))
                 }
             })
         }
