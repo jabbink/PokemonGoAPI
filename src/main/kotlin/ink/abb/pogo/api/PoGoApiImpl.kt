@@ -92,9 +92,9 @@ class PoGoApiImpl(okHttpClient: OkHttpClient, val credentialProvider: Credential
             val minRefresh = it.response.settings.mapSettings.getMapObjectsMinRefreshSeconds
             val maxRefresh = it.response.settings.mapSettings.getMapObjectsMaxRefreshSeconds
             val refresh = Math.min((maxRefresh - minRefresh) / 2 + minRefresh, minRefresh * 2)
-            fixedRateTimer(name = "GetMapObjects", daemon = true, initialDelay = 1000L, period = TimeUnit.SECONDS.toMillis(refresh.toLong()), action = {
+            fixedRateTimer(name = "GetMapObjects-${credentialProvider.hashCode()}", daemon = true, initialDelay = 1000L, period = TimeUnit.SECONDS.toMillis(refresh.toLong()), action = {
                 if (!(poGoApi.latitude == 0.0 && poGoApi.longitude == 0.0)) {
-                    queueRequest(GetMapObjects(poGoApi, 1, 0L))
+                    queueRequest(GetMapObjects(poGoApi, 3, poGoApi.lastMapRequest))
                 }
             })
         }
@@ -197,6 +197,7 @@ class PoGoApiImpl(okHttpClient: OkHttpClient, val credentialProvider: Credential
                             .union(it.wildPokemonsList.map {
                                 MapPokemon(this, it)
                             })
+                    println("got ${gyms.size + pokestops.size + mapPokemon.size} items")
                     map.setGyms(it.s2CellId, gyms)
                     map.setPokestops(it.s2CellId, pokestops)
                     map.setPokemon(it.s2CellId, this.currentTimeMillis(), mapPokemon)

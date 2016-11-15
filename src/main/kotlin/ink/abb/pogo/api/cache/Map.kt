@@ -35,7 +35,7 @@ class Map {
         val mapCell = getMapCell(cellId)
         // Fully override Pokemon as they might've expired
         mapCell.lastUpdated = time
-        mapCell.pokemon = mapPokemon
+        mapCell.pokemon = mapCell.pokemon.filter { it.valid }.toMutableSet() + mapPokemon
     }
 
     fun setPokestops(cellId: Long, pokestops: Collection<Pokestop>) {
@@ -62,7 +62,7 @@ class Map {
 
             val cells = ArrayList<Long>()
 
-            val halfWidth = Math.floor((width / 2).toDouble()).toInt()
+            val halfWidth = Math.floor(width.toDouble() / 2.0).toInt()
             for (x in -halfWidth..halfWidth) {
                 for (y in -halfWidth..halfWidth) {
                     cells.add(S2CellId.fromFaceIJ(face, i.intValue() + x * size, j.intValue() + y * size).parent(15).id())
