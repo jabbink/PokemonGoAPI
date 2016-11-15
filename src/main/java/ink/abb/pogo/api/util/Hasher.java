@@ -28,7 +28,7 @@ public class Hasher {
             0x658239596bdea9ecL, 0x31cedf33ac38c624L,
             0x12f56816481b0cfdL, 0x94e9de155f40f095L,
             0x5089c907844c6325L, 0xdf887e97d73c50e3L,
-            0xae8870787ce3c11dL, 0xa6767d18c58d2116L
+            0xae8870787ce3c11dL, 0xa6767d18c58d2117L
     };
     private static final UInt128 ROUND_MAGIC = new UInt128(0x081570afdd535ec3L, 0xe3f0d44988bcdfabL);
     private static final long FINAL_MAGIC_0 = 0xce7c4801d683e824L;

