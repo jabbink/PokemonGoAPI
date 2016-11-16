@@ -1,5 +1,5 @@
 group 'ink.abb.pogo'
-version '0.0.6'
+version '1.0.0'
 
 apply plugin: 'java'
 

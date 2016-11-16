@@ -3,7 +3,9 @@ package ink.abb.pogo.api.cache
 import com.google.common.geometry.MutableInteger
 import com.google.common.geometry.S2CellId
 import com.google.common.geometry.S2LatLng
+import com.google.protobuf.ProtocolStringList
 import java.util.*
+import java.util.concurrent.TimeUnit
 
 class Map {
 
@@ -33,9 +35,12 @@ class Map {
 
     fun setPokemon(cellId: Long, time: Long, mapPokemon: Set<MapPokemon>) {
         val mapCell = getMapCell(cellId)
-        // Fully override Pokemon as they might've expired
+        /*if (time >= mapCell.lastUpdated + TimeUnit.HOURS.toMillis(1)) {
+            mapCell.pokemon = mutableSetOf()
+        }*/
         mapCell.lastUpdated = time
-        mapCell.pokemon = mapCell.pokemon.filter { it.valid }.toMutableSet() + mapPokemon
+        // only keep valids and ones that we did not just receive new info about
+        mapCell.pokemon = (mapCell.pokemon.filter { it.valid && !mapPokemon.contains(it) }.toSet() + mapPokemon).toMutableSet()
     }
 
     fun setPokestops(cellId: Long, pokestops: Collection<Pokestop>) {
@@ -46,6 +51,27 @@ class Map {
     fun setGyms(cellId: Long, gyms: Collection<Gym>) {
         val mapCell = getMapCell(cellId)
         mapCell.gyms.addAll(gyms)
+    }
+
+    fun removeObjects(cellId: Long, deletedObjectsList: ProtocolStringList) {
+        val mapCell = getMapCell(cellId)
+        deletedObjectsList.forEach {
+            if (it != null) {
+                val objectId = it
+                val deleteStop = mapCell.pokestops.find { it.fortData.id == objectId }
+                if (deleteStop != null) {
+                    mapCell.pokestops.remove(deleteStop)
+                }
+                val deleteGym = mapCell.gyms.find { it.fortData.id == objectId }
+                if (deleteGym != null) {
+                    mapCell.gyms.remove(deleteGym)
+                }
+                val deletePokemon = mapCell.pokemon.find { it.spawnPointId == objectId }
+                if (deletePokemon != null) {
+                    mapCell.pokemon.remove(deletePokemon)
+                }
+            }
+        }
     }
 
     companion object {

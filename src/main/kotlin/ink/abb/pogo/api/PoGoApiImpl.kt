@@ -1,10 +1,8 @@
 package ink.abb.pogo.api
 
 import POGOProtos.Data.PlayerDataOuterClass
-import POGOProtos.Data.PokemonDataOuterClass
 import POGOProtos.Enums.PokemonIdOuterClass
 import POGOProtos.Enums.TutorialStateOuterClass
-import POGOProtos.Inventory.EggIncubatorOuterClass
 import POGOProtos.Map.Fort.FortTypeOuterClass.FortType
 import POGOProtos.Networking.Envelopes.SignatureOuterClass
 import POGOProtos.Networking.Requests.Messages.*
@@ -27,6 +25,7 @@ import ink.abb.pogo.api.network.ActionQueue
 import ink.abb.pogo.api.network.ServerRequest
 import ink.abb.pogo.api.request.*
 import ink.abb.pogo.api.util.*
+import okhttp3.CookieJar
 import okhttp3.OkHttpClient
 import rx.Observable
 import rx.subjects.ReplaySubject
@@ -38,8 +37,8 @@ import kotlin.concurrent.fixedRateTimer
 class PoGoApiImpl(okHttpClient: OkHttpClient, val credentialProvider: CredentialProvider, val time: Time) : PoGoApi {
     override var inventory: Inventory = Inventory(this)
     override var map: Map = Map()
-    lateinit override var playerData: PlayerDataOuterClass.PlayerData
-    lateinit override var playerProfile: GetPlayerProfileResponseOuterClass.GetPlayerProfileResponse
+    lateinit override var playerData: PlayerDataOuterClass.PlayerData.Builder
+    lateinit override var playerProfile: GetPlayerProfileResponseOuterClass.GetPlayerProfileResponse.Builder
 
     lateinit override var fortSettings: FortSettingsOuterClass.FortSettings
     lateinit override var inventorySettings: InventorySettingsOuterClass.InventorySettings
@@ -121,7 +120,7 @@ class PoGoApiImpl(okHttpClient: OkHttpClient, val credentialProvider: Credential
             }
             RequestType.GET_PLAYER -> {
                 val response = serverRequest.response as GetPlayerResponseOuterClass.GetPlayerResponse
-                this.playerData = response.playerData
+                this.playerData = PlayerDataOuterClass.PlayerData.newBuilder(response.playerData)
                 val tut = MarkTutorialComplete().withSendMarketingEmails(false).withSendPushNotifications(false)
                 if (!playerData.tutorialStateList.contains(TutorialStateOuterClass.TutorialState.LEGAL_SCREEN)) {
                     tut.withTutorialsCompleted(TutorialStateOuterClass.TutorialState.LEGAL_SCREEN)
@@ -177,7 +176,7 @@ class PoGoApiImpl(okHttpClient: OkHttpClient, val credentialProvider: Credential
             }
             RequestType.GET_PLAYER_PROFILE -> {
                 val response = serverRequest.response as GetPlayerProfileResponseOuterClass.GetPlayerProfileResponse
-                this.playerProfile = response
+                this.playerProfile = GetPlayerProfileResponseOuterClass.GetPlayerProfileResponse.newBuilder(response)
             }
             RequestType.GET_MAP_OBJECTS -> {
                 lastMapRequest = currentTimeMillis()
@@ -200,7 +199,8 @@ class PoGoApiImpl(okHttpClient: OkHttpClient, val credentialProvider: Credential
                     //println("got ${gyms.size + pokestops.size + mapPokemon.size} items")
                     map.setGyms(it.s2CellId, gyms)
                     map.setPokestops(it.s2CellId, pokestops)
-                    map.setPokemon(it.s2CellId, this.currentTimeMillis(), mapPokemon)
+                    map.setPokemon(it.s2CellId, it.currentTimestampMs, mapPokemon)
+                    map.removeObjects(it.s2CellId, it.deletedObjectsList)
                 }
             }
             RequestType.GET_INVENTORY -> {
@@ -299,7 +299,6 @@ class PoGoApiImpl(okHttpClient: OkHttpClient, val credentialProvider: Credential
                                 if (meta != null) { //it will try to get family of MISSINGNO pokemon
                                     this.inventory.candies.getOrPut(meta.family, { AtomicInteger(0) }).addAndGet(response.getCandyAwarded(it.index))
                                 }
-                                this.inventory.pokemon.put(it.value, BagPokemon(this, egg.pokemonData)) //we are probably going to add a MISSINGNO pokemon to the pokebank
                             }
                         }
                     }
@@ -345,16 +344,19 @@ class PoGoApiImpl(okHttpClient: OkHttpClient, val credentialProvider: Credential
                     val builder = serverRequest.getBuilder() as SetFavoritePokemonMessageOuterClass.SetFavoritePokemonMessageOrBuilder
                     val pokemon = this.inventory.pokemon.get(builder.pokemonId)
                     if (pokemon != null) {
-                        val newPokemon = PokemonDataOuterClass.PokemonData.newBuilder(pokemon.pokemonData)
-                        newPokemon.favorite = if (builder.isFavorite) 1 else 0
-                        this.inventory.pokemon.put(newPokemon.id, BagPokemon(this, newPokemon.build()))
+                        pokemon.pokemonData.favorite = if (builder.isFavorite) 1 else 0
                     }
                 }
             }
             RequestType.UPGRADE_POKEMON -> {
                 val response = serverRequest.response as UpgradePokemonResponseOuterClass.UpgradePokemonResponse
                 if (response.result == UpgradePokemonResponseOuterClass.UpgradePokemonResponse.Result.SUCCESS) {
-                    // TODO: Need inventory update...
+                    val pokemon = this.inventory.pokemon[response.upgradedPokemon.id]!!
+                    pokemon.pokemonData.cp = response.upgradedPokemon.cp
+                    val meta = PokemonMetaRegistry.getMeta(pokemon.pokemonData.pokemonId)
+                    this.inventory.candies.getOrPut(meta.family, { AtomicInteger(0) }).addAndGet(-meta.candyToEvolve)
+                    val stardust = PokemonCpUtils.getStartdustCostsForPowerup(pokemon.pokemonData.cpMultiplier + pokemon.pokemonData.additionalCpMultiplier, pokemon.pokemonData.numUpgrades)
+                    this.inventory.currencies.getOrPut("STARDUST", { AtomicInteger(0) }).addAndGet(-stardust)
                 }
             }
             RequestType.USE_ITEM_CAPTURE -> {
@@ -371,9 +373,7 @@ class PoGoApiImpl(okHttpClient: OkHttpClient, val credentialProvider: Credential
                     this.inventory.items.getOrPut(builder.itemId, { AtomicInteger(0) }).andDecrement
                     val pokemon = this.inventory.pokemon.get(builder.pokemonId)
                     if (pokemon != null) {
-                        val newPokemon = PokemonDataOuterClass.PokemonData.newBuilder(pokemon.pokemonData)
-                        newPokemon.stamina = response.stamina
-                        this.inventory.pokemon.put(newPokemon.id, BagPokemon(this, newPokemon.build()))
+                        pokemon.pokemonData.stamina = response.stamina
                     }
                 }
             }
@@ -398,12 +398,8 @@ class PoGoApiImpl(okHttpClient: OkHttpClient, val credentialProvider: Credential
                     val egg = this.inventory.eggs.get(builder.pokemonId)
                     val incubator = this.inventory.eggIncubators.get(builder.itemId)
                     if (egg != null && incubator != null) {
-                        val newEgg = PokemonDataOuterClass.PokemonData.newBuilder(egg.pokemonData)
-                        newEgg.eggIncubatorId = incubator.id
-                        val newIncubator = EggIncubatorOuterClass.EggIncubator.newBuilder(incubator)
-                        newIncubator.pokemonId = newEgg.id
-                        this.inventory.eggs.put(egg.pokemonData.id, BagPokemon(this, newEgg.build()))
-                        this.inventory.eggIncubators.put(incubator.id, newIncubator.build())
+                        egg.pokemonData.eggIncubatorId = incubator.id
+                        incubator.pokemonId = egg.pokemonData.id
                     }
                 }
             }
@@ -418,7 +414,7 @@ class PoGoApiImpl(okHttpClient: OkHttpClient, val credentialProvider: Credential
             RequestType.SET_BUDDY_POKEMON -> {
                 val response = serverRequest.response as SetBuddyPokemonResponseOuterClass.SetBuddyPokemonResponse
                 if (response.result == SetBuddyPokemonResponseOuterClass.SetBuddyPokemonResponse.Result.SUCCESS) {
-                    queueRequest(GetPlayer()).toBlocking()
+                    this.playerData.buddyPokemon = response.updatedBuddy
                 }
             }
             else -> {

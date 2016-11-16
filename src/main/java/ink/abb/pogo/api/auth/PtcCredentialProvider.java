@@ -54,6 +54,8 @@ public class PtcCredentialProvider extends CredentialProvider {
     protected long expiresTimestamp;
     protected AuthInfo.Builder authbuilder;
 
+    private final HashMap<String, List<Cookie>> cookieStore = new HashMap<String, List<Cookie>>();
+
     /**
      * Instantiates a new Ptc login.
      *
@@ -81,8 +83,6 @@ public class PtcCredentialProvider extends CredentialProvider {
 		so it being discarded is completely fine
 		*/
         CookieJar tempJar = new CookieJar() {
-            private final HashMap<String, List<Cookie>> cookieStore = new HashMap<String, List<Cookie>>();
-
             @Override
             public void saveFromResponse(HttpUrl url, List<Cookie> cookies) {
                 cookieStore.put(url.host(), cookies);
@@ -132,6 +132,8 @@ public class PtcCredentialProvider extends CredentialProvider {
      */
     public void login() throws LoginFailedException, RemoteServerException {
         System.out.println("[PTC] Logging back in!");
+
+        cookieStore.clear();
 
         //TODO: stop creating an okhttp client per request
         Request get = new Request.Builder()
@@ -273,7 +275,8 @@ public class PtcCredentialProvider extends CredentialProvider {
 
     @Override
     public boolean isTokenIdExpired() {
-        if (time.currentTimeMillis() > expiresTimestamp - REFRESH_TOKEN_BUFFER_TIME) {
+        long now = time.currentTimeMillis();
+        if (now > expiresTimestamp - REFRESH_TOKEN_BUFFER_TIME) {
             return true;
         } else {
             return false;

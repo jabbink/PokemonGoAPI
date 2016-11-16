@@ -92,7 +92,9 @@ class ActionQueue(val poGoApi: PoGoApi, val okHttpClient: OkHttpClient, val cred
         val envelope = RequestEnvelopeOuterClass.RequestEnvelope.newBuilder()
         envelope.setAccuracy(Math.random() * 6.0 + 4.0).setLatitude(poGoApi.latitude).setLongitude(poGoApi.longitude)
         // TODO Set ticket when we have a valid one
-        if (authTicket?.expireTimestampMs ?: 0 > poGoApi.currentTimeMillis() + CredentialProvider.REFRESH_TOKEN_BUFFER_TIME) {
+        val authTicketExpiry: Long = authTicket?.expireTimestampMs ?: 0
+        val now = poGoApi.currentTimeMillis()
+        if (authTicketExpiry > now - CredentialProvider.REFRESH_TOKEN_BUFFER_TIME) {
             envelope.authTicket = authTicket
             //println("Using authTicket: ${authTicket?.expireTimestampMs} > ${poGoApi.currentTimeMillis() + CredentialProvider.REFRESH_TOKEN_BUFFER_TIME}")
         } else {
@@ -172,11 +174,11 @@ class ActionQueue(val poGoApi: PoGoApi, val okHttpClient: OkHttpClient, val cred
                  */
                 var count = 0
                 if (responseEnvelope.returnsCount != requests.size + 1) {
-                    System.err.println("Inconsistent replies received; expected " + (requests.size + 1) + " payloads; received " + responseEnvelope.returnsCount);
-                    System.err.println("Probable culprit:")
                     if (responseEnvelope.returnsCount == requests.size) {
-                        System.err.println("Captcha request - ignoring")
+                        //System.err.println("Captcha request - ignoring")
                     } else {
+                        System.err.println("Inconsistent replies received; expected " + (requests.size + 1) + " payloads; received " + responseEnvelope.returnsCount);
+                        System.err.println("Probable culprit:")
                         System.err.println(requests[responseEnvelope.returnsCount].first.getRequestType())
                         System.err.println(requests[responseEnvelope.returnsCount].first.build(poGoApi).toString())
                         System.err.println("Envelope location: "+ envelope.latitude +" "+ envelope.longitude)

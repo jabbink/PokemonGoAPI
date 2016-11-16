@@ -19,7 +19,7 @@ class Inventory(val poGoApi: PoGoApi) {
     var appliedItems = mutableListOf<AppliedItemOuterClass.AppliedItem>()
     var candies = mutableMapOf<PokemonFamilyId, AtomicInteger>()
 
-    var eggIncubators = mutableMapOf<String, EggIncubator>()
+    var eggIncubators = mutableMapOf<String, EggIncubator.Builder>()
 
     var maxSize = AtomicInteger(350)
 
@@ -47,7 +47,7 @@ class Inventory(val poGoApi: PoGoApi) {
         val items: MutableMap<ItemId, AtomicInteger>
         val pokemon: MutableMap<Long, BagPokemon>
         val eggs: MutableMap<Long, BagPokemon>
-        val eggIncubators: MutableMap<String, EggIncubator>
+        val eggIncubators: MutableMap<String, EggIncubator.Builder>
         val candies: MutableMap<PokemonFamilyId, AtomicInteger>
 
         val maxSize: AtomicInteger
@@ -87,7 +87,7 @@ class Inventory(val poGoApi: PoGoApi) {
                 candies.getOrPut(itemData.candy.familyId, { AtomicInteger(0) }).set(itemData.candy.candy)
             }
             if (itemData.hasEggIncubators()) {
-                itemData.eggIncubators.eggIncubatorList.forEach { eggIncubators.put(it.id, it) }
+                itemData.eggIncubators.eggIncubatorList.forEach { eggIncubators.put(it.id, EggIncubator.newBuilder(it)) }
             }
             if (itemData.hasInventoryUpgrades()) {
                 var total = 350

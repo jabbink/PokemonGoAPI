@@ -28,7 +28,7 @@ class MapPokemon {
     val valid: Boolean
         get() = expirationTimestampMs == -1L || poGoApi.currentTimeMillis() < expirationTimestampMs
 
-    constructor(poGoApi: PoGoApi, proto: MapPokemonOuterClass.MapPokemon) {
+    constructor(poGoApi: PoGoApi, proto: MapPokemonOuterClass.MapPokemonOrBuilder) {
         this.encounterKind = EncounterKind.NORMAL
         this.spawnPointId = proto.spawnPointId
         this.encounterId = proto.encounterId
@@ -40,7 +40,7 @@ class MapPokemon {
         this.poGoApi = poGoApi
     }
 
-    constructor(poGoApi: PoGoApi, proto: WildPokemonOuterClass.WildPokemon) {
+    constructor(poGoApi: PoGoApi, proto: WildPokemonOuterClass.WildPokemonOrBuilder) {
         this.encounterKind = EncounterKind.NORMAL
         this.spawnPointId = proto.spawnPointId
         this.encounterId = proto.encounterId
@@ -53,7 +53,7 @@ class MapPokemon {
 
     }
 
-    constructor(poGoApi: PoGoApi, proto: FortDataOuterClass.FortData) {
+    constructor(poGoApi: PoGoApi, proto: FortDataOuterClass.FortDataOrBuilder) {
         this.spawnPointId = proto.lureInfo.fortId
         this.encounterId = proto.lureInfo.encounterId
         this.pokemonId = proto.lureInfo.activePokemonId

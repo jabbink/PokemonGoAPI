@@ -4,7 +4,9 @@ import POGOProtos.Map.Fort.FortDataOuterClass
 import ink.abb.pogo.api.PoGoApi
 import ink.abb.pogo.api.request.FortDetails
 
-abstract class Fort(val poGoApi: PoGoApi, val fortData: FortDataOuterClass.FortData) {
+abstract class Fort(val poGoApi: PoGoApi, rawData: FortDataOuterClass.FortDataOrBuilder) {
+    val fortData: FortDataOuterClass.FortData.Builder = rawData as? FortDataOuterClass.FortData.Builder ?: FortDataOuterClass.FortData.newBuilder(rawData as? FortDataOuterClass.FortData)
+
     val id = fortData.id
 
     var fetchedDetails = false

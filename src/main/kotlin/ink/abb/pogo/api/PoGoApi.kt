@@ -34,8 +34,8 @@ interface PoGoApi {
     fun <T : ServerRequest> queueRequest(request: T): Observable<T>
 
     // caches
-    var playerProfile: GetPlayerProfileResponseOuterClass.GetPlayerProfileResponse
-    var playerData: PlayerDataOuterClass.PlayerData
+    var playerProfile: GetPlayerProfileResponseOuterClass.GetPlayerProfileResponse.Builder
+    var playerData: PlayerDataOuterClass.PlayerData.Builder
     var map: Map
     var inventory: Inventory
     var fortSettings: FortSettingsOuterClass.FortSettings

@@ -19,12 +19,14 @@ import POGOProtos.Networking.Envelopes.RequestEnvelopeOuterClass.RequestEnvelope
 import ink.abb.pogo.api.exceptions.LoginFailedException;
 import ink.abb.pogo.api.exceptions.RemoteServerException;
 
+import java.util.concurrent.TimeUnit;
+
 /**
  * Any Credential Provider can extend this.
  */
 public abstract class CredentialProvider {
 
-    public static final long REFRESH_TOKEN_BUFFER_TIME = 5 * 60 * 1000;
+    public static final long REFRESH_TOKEN_BUFFER_TIME = TimeUnit.MINUTES.toMillis(5);
 
     public abstract String getTokenId() throws LoginFailedException, RemoteServerException;
 
