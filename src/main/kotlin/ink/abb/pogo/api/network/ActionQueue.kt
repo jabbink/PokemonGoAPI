@@ -94,7 +94,7 @@ class ActionQueue(val poGoApi: PoGoApi, val okHttpClient: OkHttpClient, val cred
         // TODO Set ticket when we have a valid one
         val authTicketExpiry: Long = authTicket?.expireTimestampMs ?: 0
         val now = poGoApi.currentTimeMillis()
-        if (authTicketExpiry > now - CredentialProvider.REFRESH_TOKEN_BUFFER_TIME) {
+        if (authTicketExpiry > now + CredentialProvider.REFRESH_TOKEN_BUFFER_TIME) {
             envelope.authTicket = authTicket
             //println("Using authTicket: ${authTicket?.expireTimestampMs} > ${poGoApi.currentTimeMillis() + CredentialProvider.REFRESH_TOKEN_BUFFER_TIME}")
         } else {
