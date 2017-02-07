@@ -111,6 +111,12 @@ class PoGoApiImpl(val okHttpClient: OkHttpClient, val credentialProvider: Creden
     }
 
     override fun handleResponse(serverRequest: ServerRequest) {
+        synchronized(this) {
+            myHandleResponse( serverRequest )
+        }
+    }
+
+    private fun myHandleResponse(serverRequest: ServerRequest) {
         when (serverRequest.getRequestType()) {
             RequestType.DOWNLOAD_SETTINGS -> {
                 val response = serverRequest.response as DownloadSettingsResponseOuterClass.DownloadSettingsResponse
